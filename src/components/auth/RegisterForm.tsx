@@ -91,7 +91,7 @@ export function RegisterForm() {
 
     try {
       await signInWithGoogle();
-      router.push('/profile/setup');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
     } finally {

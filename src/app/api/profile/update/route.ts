@@ -4,19 +4,30 @@ import type { UserProfile } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, profile } = await request.json() as {
-      userId: string;
+    const body = await request.json();
+    const { uid, userId, profile } = body as {
+      uid?: string;
+      userId?: string;
       profile: Partial<UserProfile>;
     };
 
-    if (!userId) {
+    const userIdToUse = uid || userId;
+
+    if (!userIdToUse) {
       return NextResponse.json(
         { success: false, error: 'User ID is required' },
         { status: 400 }
       );
     }
 
-    await updateUserProfile(userId, profile);
+    if (!profile) {
+      return NextResponse.json(
+        { success: false, error: 'Profile data is required' },
+        { status: 400 }
+      );
+    }
+
+    await updateUserProfile(userIdToUse, profile);
 
     return NextResponse.json({
       success: true,

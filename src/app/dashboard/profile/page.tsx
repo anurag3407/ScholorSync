@@ -123,16 +123,20 @@ export default function ProfilePage() {
         })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         toast.success("Profile saved successfully!");
         setProfileComplete(true);
         router.push("/dashboard");
       } else {
-        throw new Error("Failed to save profile");
+        const errorMessage = data.error || "Failed to save profile";
+        toast.error(errorMessage);
+        console.error("Profile update failed:", data);
       }
     } catch (error) {
-      toast.error("Failed to save profile. Please try again.");
-      console.error(error);
+      toast.error("Failed to save profile. Please check your connection and try again.");
+      console.error("Profile update error:", error);
     } finally {
       setSaving(false);
     }

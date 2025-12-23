@@ -96,6 +96,85 @@ function calculateMatchPercentage(profile: UserProfile, scholarship: Scholarship
   return { percentage, matchReasons, missingCriteria };
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { uid, userId, useVectorSearch } = body as {
+      uid?: string;
+      userId?: string;
+      useVectorSearch?: boolean;
+    };
+
+    const userIdToUse = uid || userId;
+
+    if (!userIdToUse) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get user profile
+    const user = await getUser(userIdToUse);
+    if (!user || !user.profile) {
+      return NextResponse.json(
+        { success: false, error: 'User profile not found' },
+        { status: 404 }
+      );
+    }
+
+    let scholarships: Scholarship[];
+
+    if (useVectorSearch) {
+      // Use vector search for semantic matching
+      try {
+        const profileEmbedding = await generateProfileEmbedding(user.profile);
+        const vectorResults = await querySimilarScholarships(profileEmbedding, 20);
+        
+        // Get full scholarship data for matched IDs
+        const allScholarships = await getAllScholarships();
+        const matchedIds = new Set(vectorResults.map((r) => r.id));
+        scholarships = allScholarships.filter((s) => matchedIds.has(s.id));
+      } catch (error) {
+        console.error('Vector search failed, falling back to all scholarships:', error);
+        scholarships = await getAllScholarships();
+      }
+    } else {
+      // Get all scholarships and filter by basic criteria
+      scholarships = await getAllScholarships();
+    }
+
+    // Calculate match percentages
+    const matchedScholarships: ScholarshipMatch[] = scholarships.map((scholarship) => {
+      const { percentage, matchReasons, missingCriteria } = calculateMatchPercentage(
+        user.profile,
+        scholarship
+      );
+      return {
+        ...scholarship,
+        matchPercentage: percentage,
+        matchReasons,
+        missingCriteria,
+      };
+    });
+
+    // Sort by match percentage
+    matchedScholarships.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+    return NextResponse.json({
+      success: true,
+      scholarships: matchedScholarships,
+      count: matchedScholarships.length,
+    });
+  } catch (error) {
+    console.error('Error matching scholarships:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to match scholarships' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -58,7 +58,8 @@ export default function DocumentsPage() {
           setProfileComplete(data.profile?.isComplete || false);
           
           const docsMap: Record<string, UserDocument> = {};
-          (data.documents || []).forEach((doc: UserDocument) => {
+          const documentsArray = Array.isArray(data.documents) ? data.documents : [];
+          documentsArray.forEach((doc: UserDocument) => {
             docsMap[doc.type] = doc;
           });
           setDocuments(docsMap);
@@ -84,8 +85,8 @@ export default function DocumentsPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('uid', user.uid);
-      formData.append('docType', docType);
+      formData.append('userId', user.uid);
+      formData.append('documentType', docType);
 
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
@@ -100,7 +101,8 @@ export default function DocumentsPage() {
         }));
         toast.success('Document uploaded successfully!');
       } else {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Upload failed');
       }
     } catch (error) {
       toast.error('Failed to upload document. Please try again.');

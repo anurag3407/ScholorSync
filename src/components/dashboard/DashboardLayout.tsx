@@ -123,13 +123,13 @@ function SidebarContent({ user, pathname, onLinkClick }: SidebarContentProps) {
         <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user?.profile?.name ? undefined : undefined} />
-            <AvatarFallback>
+            <AvatarFallback suppressHydrationWarning>
               {user?.profile?.name?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium">{user?.profile?.name || 'User'}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+            <p className="truncate text-sm font-medium" suppressHydrationWarning>{user?.profile?.name || 'User'}</p>
+            <p className="truncate text-xs text-muted-foreground" suppressHydrationWarning>{user?.email}</p>
           </div>
         </div>
       </div>
@@ -187,6 +187,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 type="text"
                 placeholder="Search scholarships..."
                 className="h-10 w-64 rounded-lg border bg-background pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                suppressHydrationWarning
               />
             </div>
           </div>
@@ -204,7 +205,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback suppressHydrationWarning>
                       {user?.profile?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -213,8 +214,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user?.profile?.name || 'User'}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium" suppressHydrationWarning>{user?.profile?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground" suppressHydrationWarning>{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

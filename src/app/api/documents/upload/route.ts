@@ -60,11 +60,14 @@ export async function POST(request: NextRequest) {
 
       // Get download URL
       downloadUrl = await getDownloadURL(storageRef);
-    } catch (storageError: any) {
+    } catch (storageError) {
       console.error('Storage error:', storageError);
       
       // Check if it's a storage configuration error
-      if (storageError.code === 'storage/unknown' || storageError.status_ === 404) {
+      if (
+        (storageError as { code?: string; status_?: number }).code === 'storage/unknown' ||
+        (storageError as { code?: string; status_?: number }).status_ === 404
+      ) {
         return NextResponse.json(
           { 
             success: false, 

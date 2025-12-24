@@ -255,7 +255,6 @@ ScholarSync/
 │   │   └── utils.ts         # Utility functions
 │   └── types/               # TypeScript type definitions
 ├── public/                   # Static assets
-├── docs/                     # Documentation
 ├── .env.local               # Environment variables (gitignored)
 ├── next.config.ts           # Next.js configuration
 ├── tsconfig.json            # TypeScript configuration
@@ -330,9 +329,9 @@ ScholarSync/
 
 ## 📚 Documentation
 
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: System architecture and design decisions
-- **[API_DOCS.md](docs/API_DOCS.md)**: Complete API reference
-- **[REAL_LIFE_USECASE.md](docs/REAL_LIFE_USECASE.md)**: Real-world use cases and success stories
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: System architecture and design decisions
+- **[API_DOCS.md](API_DOCS.md)**: Complete API reference
+- **[REAL_LIFE_USECASE.md](REAL_LIFE_USECASE.md)**: Real-world use cases and success stories
 - **[CONTRIBUTING.md](CONTRIBUTING.md)**: Contribution guidelines
 
 ---

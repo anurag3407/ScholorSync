@@ -290,11 +290,13 @@ export function ScholarshipCard({
           )}
         </Button>
 
-        <Button size="sm" className="flex-1" asChild>
-          <a href={scholarship.applicationUrl} target="_blank" rel="noopener noreferrer">
-            Apply Now
-            <ExternalLink className="h-4 w-4 ml-1" />
-          </a>
+        <Button 
+          size="sm" 
+          className="flex-1"
+          onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+        >
+          Apply Now
+          <ExternalLink className="h-4 w-4 ml-1" />
         </Button>
       </CardFooter>
     </Card>

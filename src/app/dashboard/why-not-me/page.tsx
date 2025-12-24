@@ -188,7 +188,9 @@ export default function WhyNotMePage() {
                     </CardDescription>
                   </div>
                   <Badge className="text-lg font-semibold px-4 py-2">
-                    ₹{result.scholarship.amount.toLocaleString()}
+                    ₹{typeof result.scholarship.amount === 'object' && result.scholarship.amount !== null
+                      ? `${result.scholarship.amount.min.toLocaleString()} - ${result.scholarship.amount.max.toLocaleString()}`
+                      : (result.scholarship.amount as number).toLocaleString()}
                   </Badge>
                 </div>
               </CardHeader>
@@ -214,7 +216,7 @@ export default function WhyNotMePage() {
                 <div>
                   <h4 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-500" />
-                    What You${''} re Missing
+                    What You are Missing
                   </h4>
                   <div className="space-y-2">
                     {result.missingCriteria.map((criteria, idx) => (

@@ -4,17 +4,15 @@ import { storage, isFirebaseConfigured } from '@/lib/firebase/config';
 import { updateUser, getUser } from '@/lib/firebase/firestore';
 import { extractDocumentData } from '@/lib/langchain/chains';
 import Tesseract from 'tesseract.js';
+import fs from 'fs';
+import path from 'path';
+
+// Check if Firebase Storage is properly configured and working
+const useLocalStorage = !process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
+  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET.includes('demo');
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if Firebase is configured
-    if (!isFirebaseConfigured) {
-      return NextResponse.json(
-        { success: false, error: 'Firebase is not configured. Please set up environment variables.' },
-        { status: 500 }
-      );
-    }
-
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
@@ -48,43 +46,33 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to Firebase Storage with error handling
     let downloadUrl: string;
-    try {
-      const fileName = `${userId}/${documentType}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, `documents/${fileName}`);
-      
-      await uploadBytes(storageRef, buffer, {
-        contentType: file.type,
-      });
 
-      // Get download URL
-      downloadUrl = await getDownloadURL(storageRef);
-    } catch (storageError) {
-      console.error('Storage error:', storageError);
-      
-      // Check if it's a storage configuration error
-      if (
-        (storageError as { code?: string; status_?: number }).code === 'storage/unknown' ||
-        (storageError as { code?: string; status_?: number }).status_ === 404
-      ) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Firebase Storage is not properly configured. Please check your storage bucket settings in Firebase Console.' 
-          },
-          { status: 500 }
-        );
+    // Try Firebase Storage first, fallback to local storage
+    if (!useLocalStorage && isFirebaseConfigured) {
+      try {
+        const fileName = `${userId}/${documentType}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, `documents/${fileName}`);
+        
+        await uploadBytes(storageRef, buffer, {
+          contentType: file.type,
+        });
+
+        downloadUrl = await getDownloadURL(storageRef);
+      } catch (storageError) {
+        console.error('Firebase Storage error, falling back to local storage:', storageError);
+        // Fall through to local storage
+        downloadUrl = await saveToLocalStorage(buffer, userId, documentType, file.name);
       }
-      
-      throw storageError;
+    } else {
+      // Use local storage
+      downloadUrl = await saveToLocalStorage(buffer, userId, documentType, file.name);
     }
 
     // Perform OCR if it's an image
     let extractedData = {};
     if (file.type.startsWith('image/')) {
       try {
-        // Perform OCR
         const ocrResult = await Tesseract.recognize(
           buffer,
           'eng',
@@ -93,7 +81,6 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        // Extract structured data using AI
         extractedData = await extractDocumentData(documentType, ocrResult.data.text);
       } catch (ocrError) {
         console.error('OCR error:', ocrError);
@@ -102,21 +89,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user document in Firestore
-    const user = await getUser(userId);
-    if (user) {
-      const updatedDocuments = {
-        ...user.documents,
-        [documentType]: {
-          type: documentType,
-          name: file.name,
-          fileUrl: downloadUrl,
-          fileName: file.name,
-          uploadedAt: new Date(),
-          extractedData,
-        },
-      };
+    if (isFirebaseConfigured) {
+      try {
+        const user = await getUser(userId);
+        if (user) {
+          const updatedDocuments = {
+            ...user.documents,
+            [documentType]: {
+              type: documentType,
+              name: file.name,
+              fileUrl: downloadUrl,
+              fileName: file.name,
+              uploadedAt: new Date(),
+              extractedData,
+            },
+          };
 
-      await updateUser(userId, { documents: updatedDocuments });
+          await updateUser(userId, { documents: updatedDocuments });
+        }
+      } catch (firestoreError) {
+        console.error('Firestore update error:', firestoreError);
+        // Continue - document was uploaded successfully
+      }
     }
 
     return NextResponse.json({
@@ -136,4 +130,28 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Save file to local public/uploads folder
+async function saveToLocalStorage(
+  buffer: Buffer, 
+  userId: string, 
+  documentType: string, 
+  fileName: string
+): Promise<string> {
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', userId, documentType);
+  
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  
+  const uniqueFileName = `${Date.now()}_${fileName}`;
+  const filePath = path.join(uploadsDir, uniqueFileName);
+  
+  // Write file to disk
+  fs.writeFileSync(filePath, buffer);
+  
+  // Return URL path (relative to public folder)
+  return `/uploads/${userId}/${documentType}/${uniqueFileName}`;
 }

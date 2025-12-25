@@ -257,7 +257,7 @@ export function ChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[480px] max-w-[calc(100vw-2rem)] sm:max-w-[1000px]"
+            className="fixed bottom-6 right-6 z-50 w-[550px] max-w-[calc(100vw-2rem)] sm:max-w-[1000px]"
             style={{ height: 'calc(100vh - 6rem)', maxHeight: '700px' }}
           >
             <Card className="shadow-2xl border-0 overflow-hidden flex flex-col h-full">

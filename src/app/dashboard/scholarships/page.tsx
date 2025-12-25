@@ -407,8 +407,21 @@ export default function ScholarshipsPage() {
                         </span>
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button size="sm" variant="outline">View Details</Button>
-                        <Button size="sm">Apply</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            alert(`${scholarship.name}\n\nProvider: ${scholarship.provider}\nAmount: ₹${scholarship.amount.min.toLocaleString()} - ₹${scholarship.amount.max.toLocaleString()}\nDeadline: ${scholarship.deadline}\nEligibility: ${scholarship.eligibilityText}\n\nDocuments Required:\n${scholarship.documentsRequired.join('\n')}`);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+                        >
+                          Apply
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -467,7 +480,12 @@ export default function ScholarshipsPage() {
                           </ul>
                         </div>
                       )}
-                      <Button size="sm" variant="outline" className="mt-3">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-3"
+                        onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+                      >
                         View Details
                       </Button>
                     </div>

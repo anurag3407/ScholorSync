@@ -1,5 +1,10 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+/**
+ * Seed script using Firebase Client SDK (no service account needed)
+ * Run with: npx tsx scripts/seed-client.ts
+ */
+
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs';
@@ -51,35 +56,32 @@ interface ScholarshipsData {
   scholarships: Scholarship[];
 }
 
-// Initialize Firebase Admin
-function initFirebaseAdmin() {
-  if (getApps().length === 0) {
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    
-    if (serviceAccount) {
-      initializeApp({
-        credential: cert(JSON.parse(serviceAccount)),
-      });
-    } else {
-      // Try loading from file
-      const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
-      if (fs.existsSync(serviceAccountPath)) {
-        initializeApp({
-          credential: cert(serviceAccountPath),
-        });
-      } else {
-        throw new Error('Firebase service account not found. Set FIREBASE_SERVICE_ACCOUNT_KEY env variable or place serviceAccountKey.json in root.');
-      }
-    }
+// Firebase client config from env
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Validate Firebase config
+function validateFirebaseConfig() {
+  const required = ['apiKey', 'authDomain', 'projectId'];
+  const missing = required.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing Firebase config: ${missing.join(', ')}. Check your .env.local file.`);
   }
-  return getFirestore();
 }
 
 // Initialize Pinecone
 function initPinecone() {
   const apiKey = process.env.PINECONE_API_KEY;
   if (!apiKey) {
-    throw new Error('PINECONE_API_KEY environment variable not set');
+    console.warn('⚠️  PINECONE_API_KEY not set - skipping Pinecone seeding');
+    return null;
   }
   return new Pinecone({ apiKey });
 }
@@ -88,7 +90,8 @@ function initPinecone() {
 function initGoogleAI() {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    throw new Error('GOOGLE_API_KEY environment variable not set');
+    console.warn('⚠️  GOOGLE_API_KEY not set - skipping embeddings');
+    return null;
   }
   return new GoogleGenerativeAI(apiKey);
 }
@@ -120,36 +123,33 @@ async function generateEmbedding(genAI: GoogleGenerativeAI, scholarship: Scholar
 }
 
 // Seed Firestore with scholarships
-async function seedFirestore(db: FirebaseFirestore.Firestore, scholarships: Scholarship[]): Promise<void> {
+async function seedFirestore(db: ReturnType<typeof getFirestore>, scholarships: Scholarship[]): Promise<void> {
   console.log('\n📦 Seeding Firestore with scholarships...\n');
   
-  const batch = db.batch();
-  const scholarshipsRef = db.collection('scholarships');
-  
+  const scholarshipsRef = collection(db, 'scholarships');
   let count = 0;
-  const batchSize = 500; // Firestore batch limit
   
-  for (const scholarship of scholarships) {
-    const docRef = scholarshipsRef.doc(scholarship.id);
-    batch.set(docRef, {
-      ...scholarship,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      viewCount: Math.floor(Math.random() * 10000) + 1000,
-      applicationCount: Math.floor(Math.random() * 5000) + 500,
-    });
+  // Process in batches of 500 (Firestore limit)
+  const batchSize = 500;
+  
+  for (let i = 0; i < scholarships.length; i += batchSize) {
+    const batch = writeBatch(db);
+    const currentBatch = scholarships.slice(i, i + batchSize);
     
-    count++;
-    
-    if (count % batchSize === 0) {
-      await batch.commit();
-      console.log(`  ✅ Committed batch of ${batchSize} scholarships`);
+    for (const scholarship of currentBatch) {
+      const docRef = doc(scholarshipsRef, scholarship.id);
+      batch.set(docRef, {
+        ...scholarship,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        viewCount: Math.floor(Math.random() * 10000) + 1000,
+        applicationCount: Math.floor(Math.random() * 5000) + 500,
+      });
+      count++;
     }
-  }
-  
-  // Commit remaining
-  if (count % batchSize !== 0) {
+    
     await batch.commit();
+    console.log(`  ✅ Committed batch: ${count} scholarships`);
   }
   
   console.log(`\n✅ Seeded ${count} scholarships to Firestore\n`);
@@ -164,6 +164,9 @@ async function seedPinecone(
   console.log('\n🧠 Generating embeddings and seeding Pinecone...\n');
   
   const indexName = process.env.PINECONE_INDEX_NAME || process.env.PINECONE_INDEX || 'scholarships';
+  
+  console.log(`  📍 Using Pinecone index: ${indexName}`);
+  
   const index = pinecone.index(indexName);
   
   const batchSize = 50;
@@ -232,7 +235,7 @@ async function seedPinecone(
 }
 
 // Seed community data
-async function seedCommunityData(db: FirebaseFirestore.Firestore): Promise<void> {
+async function seedCommunityData(db: ReturnType<typeof getFirestore>): Promise<void> {
   console.log('\n💬 Seeding community data...\n');
   
   const users = [
@@ -241,9 +244,6 @@ async function seedCommunityData(db: FirebaseFirestore.Firestore): Promise<void>
     { id: 'user-3', name: 'Anita Desai', avatar: 'AD', reputation: 2100, badges: ['expert', 'mentor'] },
     { id: 'user-4', name: 'Vikram Singh', avatar: 'VS', reputation: 560, badges: ['newcomer'] },
     { id: 'user-5', name: 'Meera Patel', avatar: 'MP', reputation: 1800, badges: ['helper', 'verified'] },
-    { id: 'user-6', name: 'Arjun Nair', avatar: 'AN', reputation: 720, badges: ['verified'] },
-    { id: 'user-7', name: 'Kavitha Reddy', avatar: 'KR', reputation: 3200, badges: ['expert', 'top-contributor', 'mentor'] },
-    { id: 'user-8', name: 'Suresh Menon', avatar: 'SM', reputation: 450, badges: [] },
   ];
   
   const posts = [
@@ -257,17 +257,9 @@ async function seedCommunityData(db: FirebaseFirestore.Firestore): Promise<void>
 - Family income should be less than 8 lakh per annum
 - Must be pursuing a regular degree course
 
-**Documents I prepared:**
-1. Class 12 marksheet (attested)
-2. Income certificate from Tehsildar
-3. Bank account details
-4. Aadhaar card
-5. College admission letter
-
 **Tips:**
 - Apply early on NSP portal
 - Keep all documents ready in PDF format
-- The income certificate should be recent (within 6 months)
 - Track your application status regularly
 
 I received ₹10,000 for UG and it really helped with my expenses. Feel free to ask any questions!`,
@@ -286,14 +278,7 @@ I received ₹10,000 for UG and it really helped with my expenses. Feel free to 
     {
       id: 'post-2',
       title: 'NSP Portal Not Working - Anyone Else Facing Issues?',
-      content: `I've been trying to submit my scholarship application on NSP for the past 3 days but keep getting errors. The OTP is not being sent to my mobile number. Has anyone else faced this issue? Any workarounds?
-
-I've tried:
-- Different browsers (Chrome, Firefox)
-- Clearing cache
-- Using mobile data instead of WiFi
-
-Nothing seems to work. The deadline is approaching and I'm getting worried.`,
+      content: `I've been trying to submit my scholarship application on NSP for the past 3 days but keep getting errors. The OTP is not being sent to my mobile number. Has anyone else faced this issue?`,
       authorId: 'user-4',
       authorName: 'Vikram Singh',
       authorAvatar: 'VS',
@@ -309,29 +294,21 @@ Nothing seems to work. The deadline is approaching and I'm getting worried.`,
     {
       id: 'post-3',
       title: 'List of Scholarships for Engineering Students 2025-26',
-      content: `I've compiled a comprehensive list of scholarships available for engineering students. Bookmark this post!
+      content: `I've compiled a comprehensive list of scholarships available for engineering students:
 
 **Government Scholarships:**
 1. AICTE Pragati (for girls) - ₹50,000/year
 2. AICTE Saksham (for PwD) - ₹50,000/year
 3. Central Sector Scheme - ₹10,000-20,000/year
-4. Post Matric Scholarship (SC/ST/OBC)
 
 **Corporate Scholarships:**
 1. L&T Build India - Up to ₹1.8 lakh/year
 2. Reliance Foundation - Up to ₹6 lakh
-3. Bharti Airtel Scholarship - Up to ₹4 lakh/year
-4. Kotak Kanya (for girls) - ₹1.5 lakh/year
 
-**Private Scholarships:**
-1. Sitaram Jindal Foundation
-2. Tata Trusts
-3. HDFC ECSS
-
-Will keep updating this list. Drop a comment if I missed any!`,
-      authorId: 'user-7',
-      authorName: 'Kavitha Reddy',
-      authorAvatar: 'KR',
+Will keep updating this list!`,
+      authorId: 'user-1',
+      authorName: 'Priya Sharma',
+      authorAvatar: 'PS',
       category: 'resource',
       tags: ['engineering', 'list', 'comprehensive', '2025-26'],
       upvotes: 342,
@@ -343,70 +320,8 @@ Will keep updating this list. Drop a comment if I missed any!`,
     },
     {
       id: 'post-4',
-      title: 'Income Certificate vs ITR - Which One to Submit?',
-      content: `I'm confused about the income proof requirement. My father is a government employee and we file ITR every year. But some scholarships ask for income certificate from Tehsildar.
-
-Questions:
-1. Can I submit ITR instead of income certificate?
-2. If I need income certificate, how do I get it?
-3. What should be the validity period?
-
-Please help, deadline is in 2 weeks!`,
-      authorId: 'user-6',
-      authorName: 'Arjun Nair',
-      authorAvatar: 'AN',
-      category: 'question',
-      tags: ['income-certificate', 'itr', 'documents', 'help'],
-      upvotes: 45,
-      downvotes: 0,
-      commentCount: 23,
-      createdAt: new Date('2025-12-21'),
-      updatedAt: new Date('2025-12-21'),
-      isPinned: false,
-    },
-    {
-      id: 'post-5',
-      title: 'KVPY Preparation Strategy - Scored AIR 156',
-      content: `Just got my KVPY results and scored AIR 156! Here's my preparation strategy for juniors:
-
-**Books I Used:**
-- NCERT (thoroughly)
-- HC Verma for Physics
-- MS Chauhan for Organic Chemistry
-- Cengage for Maths
-
-**Study Schedule:**
-- 4 hours daily for 6 months
-- Solved previous 10 years papers
-- Joined a test series
-
-**Interview Tips:**
-- Be honest about what you know
-- Think out loud
-- It's okay to say "I don't know"
-
-The fellowship amount (₹5000-7000/month) is great for research aspirants. Happy to answer questions!`,
-      authorId: 'user-1',
-      authorName: 'Priya Sharma',
-      authorAvatar: 'PS',
-      category: 'success-story',
-      tags: ['kvpy', 'preparation', 'strategy', 'science'],
-      upvotes: 234,
-      downvotes: 2,
-      commentCount: 56,
-      createdAt: new Date('2025-12-18'),
-      updatedAt: new Date('2025-12-18'),
-      isPinned: false,
-    },
-    {
-      id: 'post-6',
       title: 'Scholarship Stacking - Can I Apply for Multiple?',
-      content: `I'm eligible for multiple scholarships:
-- Post Matric SC Scholarship (state)
-- Central Sector Scholarship
-- HDFC ECSS
-
-Can I apply for and receive all of them simultaneously? Or are there restrictions? Has anyone successfully stacked scholarships?`,
+      content: `I'm eligible for multiple scholarships. Can I apply for and receive all of them simultaneously? Or are there restrictions?`,
       authorId: 'user-2',
       authorName: 'Rahul Kumar',
       authorAvatar: 'RK',
@@ -419,64 +334,13 @@ Can I apply for and receive all of them simultaneously? Or are there restriction
       updatedAt: new Date('2025-12-20'),
       isPinned: false,
     },
-    {
-      id: 'post-7',
-      title: 'PM YASASVI Scholarship 2025 - Application Open!',
-      content: `The PM YASASVI scholarship applications are now open for 2025-26. Key details:
-
-**Eligibility:**
-- OBC/EBC/DNT students
-- Class 9 to 12
-- Family income up to ₹2.5 lakh
-- Must clear entrance test
-
-**Important Dates:**
-- Application Start: December 1, 2025
-- Last Date: January 31, 2026
-- Exam Date: March 2026 (tentative)
-
-**Award Amount:**
-- Class 9-10: ₹75,000/year
-- Class 11-12: ₹1,25,000/year
-
-This is a great opportunity for students in residential schools. Apply early!`,
-      authorId: 'user-5',
-      authorName: 'Meera Patel',
-      authorAvatar: 'MP',
-      category: 'announcement',
-      tags: ['pm-yasasvi', 'obc', 'ebc', 'dnt', 'application-open'],
-      upvotes: 167,
-      downvotes: 0,
-      commentCount: 45,
-      createdAt: new Date('2025-12-01'),
-      updatedAt: new Date('2025-12-01'),
-      isPinned: true,
-    },
-    {
-      id: 'post-8',
-      title: 'Rejected Due to Minor Document Error - What Now?',
-      content: `My Post Matric scholarship application was rejected because my caste certificate had a spelling mistake in my father's name. The deadline has passed now.
-
-Is there any way to appeal? Can I apply in the next cycle? This is really frustrating as I was otherwise fully eligible.`,
-      authorId: 'user-8',
-      authorName: 'Suresh Menon',
-      authorAvatar: 'SM',
-      category: 'help',
-      tags: ['rejected', 'document-error', 'appeal', 'post-matric'],
-      upvotes: 34,
-      downvotes: 0,
-      commentCount: 28,
-      createdAt: new Date('2025-12-22'),
-      updatedAt: new Date('2025-12-22'),
-      isPinned: false,
-    },
   ];
 
   const comments = [
     {
       id: 'comment-1',
       postId: 'post-2',
-      content: 'I faced the same issue last week. Try using incognito mode and make sure your Aadhaar is linked to the mobile number. That worked for me.',
+      content: 'I faced the same issue. Try using incognito mode and make sure your Aadhaar is linked to the mobile number.',
       authorId: 'user-1',
       authorName: 'Priya Sharma',
       authorAvatar: 'PS',
@@ -487,7 +351,7 @@ Is there any way to appeal? Can I apply in the next cycle? This is really frustr
     {
       id: 'comment-2',
       postId: 'post-2',
-      content: 'The NSP helpline number is 0120-6619540. They helped me resolve a similar issue. Call them during working hours.',
+      content: 'The NSP helpline number is 0120-6619540. They helped me resolve a similar issue.',
       authorId: 'user-3',
       authorName: 'Anita Desai',
       authorAvatar: 'AD',
@@ -497,41 +361,8 @@ Is there any way to appeal? Can I apply in the next cycle? This is really frustr
     },
     {
       id: 'comment-3',
-      postId: 'post-2',
-      content: 'Thanks @Priya! Incognito mode worked! Finally got the OTP.',
-      authorId: 'user-4',
-      authorName: 'Vikram Singh',
-      authorAvatar: 'VS',
-      upvotes: 12,
-      createdAt: new Date('2025-12-22T14:00:00'),
-      parentCommentId: 'comment-1',
-    },
-    {
-      id: 'comment-4',
       postId: 'post-4',
-      content: 'For government scholarships on NSP, income certificate from Tehsildar/SDM is mandatory. ITR alone won\'t work. Get the certificate - it takes about 7-10 days.',
-      authorId: 'user-7',
-      authorName: 'Kavitha Reddy',
-      authorAvatar: 'KR',
-      upvotes: 34,
-      createdAt: new Date('2025-12-21T15:00:00'),
-      parentCommentId: null,
-    },
-    {
-      id: 'comment-5',
-      postId: 'post-4',
-      content: 'Adding to @Kavitha\'s answer - for some state scholarships, you can submit ITR if father is a salaried employee. Check the specific scheme guidelines.',
-      authorId: 'user-5',
-      authorName: 'Meera Patel',
-      authorAvatar: 'MP',
-      upvotes: 23,
-      createdAt: new Date('2025-12-21T16:30:00'),
-      parentCommentId: 'comment-4',
-    },
-    {
-      id: 'comment-6',
-      postId: 'post-6',
-      content: 'Yes, you can stack! But there are some rules:\n1. You cannot receive two central government scholarships simultaneously\n2. State + Central is usually allowed\n3. Private/corporate scholarships can be stacked with government ones\n\nI received both state scholarship and Tata Trust together.',
+      content: 'Yes, you can stack! State + Central is usually allowed. Private scholarships can be combined with government ones too.',
       authorId: 'user-3',
       authorName: 'Anita Desai',
       authorAvatar: 'AD',
@@ -539,56 +370,11 @@ Is there any way to appeal? Can I apply in the next cycle? This is really frustr
       createdAt: new Date('2025-12-19T18:00:00'),
       parentCommentId: null,
     },
-    {
-      id: 'comment-7',
-      postId: 'post-8',
-      content: 'You can file a grievance on the NSP portal under "Grievance Redressal" section. Explain the situation with proof. Sometimes they reopen applications for genuine cases.',
-      authorId: 'user-7',
-      authorName: 'Kavitha Reddy',
-      authorAvatar: 'KR',
-      upvotes: 28,
-      createdAt: new Date('2025-12-22T17:00:00'),
-      parentCommentId: null,
-    },
-    {
-      id: 'comment-8',
-      postId: 'post-5',
-      content: 'Congratulations! Can you share more about the interview experience? What kind of questions did they ask?',
-      authorId: 'user-2',
-      authorName: 'Rahul Kumar',
-      authorAvatar: 'RK',
-      upvotes: 15,
-      createdAt: new Date('2025-12-18T20:00:00'),
-      parentCommentId: null,
-    },
-    {
-      id: 'comment-9',
-      postId: 'post-5',
-      content: '@Rahul They asked about my interest in science, some conceptual questions from Physics and Chemistry, and about a project I mentioned in my application. Very conversational, not stressful.',
-      authorId: 'user-1',
-      authorName: 'Priya Sharma',
-      authorAvatar: 'PS',
-      upvotes: 32,
-      createdAt: new Date('2025-12-18T21:30:00'),
-      parentCommentId: 'comment-8',
-    },
-    {
-      id: 'comment-10',
-      postId: 'post-3',
-      content: 'You missed the ONGC Scholarship for SC/ST students in engineering. It\'s around ₹48,000/year. Please add it!',
-      authorId: 'user-6',
-      authorName: 'Arjun Nair',
-      authorAvatar: 'AN',
-      upvotes: 18,
-      createdAt: new Date('2025-12-16T10:00:00'),
-      parentCommentId: null,
-    },
   ];
 
   // Seed users
-  const usersRef = db.collection('communityUsers');
   for (const user of users) {
-    await usersRef.doc(user.id).set({
+    await setDoc(doc(db, 'communityUsers', user.id), {
       ...user,
       joinedAt: new Date('2025-01-01'),
       postsCount: posts.filter(p => p.authorId === user.id).length,
@@ -598,16 +384,14 @@ Is there any way to appeal? Can I apply in the next cycle? This is really frustr
   console.log(`  ✅ Seeded ${users.length} community users`);
 
   // Seed posts
-  const postsRef = db.collection('communityPosts');
   for (const post of posts) {
-    await postsRef.doc(post.id).set(post);
+    await setDoc(doc(db, 'communityPosts', post.id), post);
   }
   console.log(`  ✅ Seeded ${posts.length} community posts`);
 
   // Seed comments
-  const commentsRef = db.collection('communityComments');
   for (const comment of comments) {
-    await commentsRef.doc(comment.id).set(comment);
+    await setDoc(doc(db, 'communityComments', comment.id), comment);
   }
   console.log(`  ✅ Seeded ${comments.length} community comments`);
 
@@ -616,10 +400,14 @@ Is there any way to appeal? Can I apply in the next cycle? This is really frustr
 
 // Main seed function
 async function main() {
-  console.log('\n🚀 Starting ScholarSync Database Seeding...\n');
+  console.log('\n🚀 Starting ScholarSync Database Seeding (Client SDK)...\n');
   console.log('='.repeat(50));
   
   try {
+    // Validate config
+    validateFirebaseConfig();
+    console.log('✅ Firebase config validated');
+    
     // Load scholarships data
     const dataPath = path.join(process.cwd(), 'scholorships.json');
     if (!fs.existsSync(dataPath)) {
@@ -631,22 +419,32 @@ async function main() {
     
     console.log(`\n📄 Loaded ${data.scholarships.length} scholarships from JSON\n`);
     
-    // Initialize services
-    const db = initFirebaseAdmin();
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    console.log('✅ Firebase initialized');
+    
+    // Initialize optional services
     const pinecone = initPinecone();
     const genAI = initGoogleAI();
     
     // Seed Firestore
     await seedFirestore(db, data.scholarships);
     
-    // Seed Pinecone with embeddings
-    await seedPinecone(pinecone, genAI, data.scholarships);
+    // Seed Pinecone with embeddings (if available)
+    if (pinecone && genAI) {
+      await seedPinecone(pinecone, genAI, data.scholarships);
+    } else {
+      console.log('\n⚠️  Skipping Pinecone seeding (missing API keys)\n');
+    }
     
     // Seed community data
     await seedCommunityData(db);
     
     console.log('='.repeat(50));
     console.log('\n🎉 All seeding complete!\n');
+    
+    process.exit(0);
     
   } catch (error) {
     console.error('\n❌ Seeding failed:', error);

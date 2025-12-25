@@ -199,14 +199,24 @@ export function ChatBot() {
       .map((line, i) => {
         // Bold
         line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Convert URLs to clickable links with word-break
+        line = line.replace(
+          /\[([^\]]+)\]\(([^)]+)\)/g,
+          '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline break-all">$1</a>'
+        );
+        // Also handle plain URLs
+        line = line.replace(
+          /(?<!href=")(https?:\/\/[^\s<]+)/g,
+          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline break-all">$1</a>'
+        );
         // Bullets
-        if (line.startsWith('• ') || line.startsWith('- ')) {
-          return `<li key="${i}" class="ml-4">${line.substring(2)}</li>`;
+        if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+          return `<li key="${i}" class="ml-4 list-disc list-inside">${line.substring(2)}</li>`;
         }
         // Numbered list
         const numberedMatch = line.match(/^(\d+)\.\s(.+)/);
         if (numberedMatch) {
-          return `<li key="${i}" class="ml-4">${numberedMatch[2]}</li>`;
+          return `<li key="${i}" class="ml-4 list-decimal list-inside">${numberedMatch[2]}</li>`;
         }
         return line;
       })
@@ -247,7 +257,7 @@ export function ChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-3rem)]"
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] sm:max-w-[420px]"
           >
             <Card className="shadow-2xl border-0 overflow-hidden">
               {/* Header */}
@@ -284,7 +294,7 @@ export function ChatBot() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="h-[400px] p-4">
+              <ScrollArea className="h-[450px] p-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
                     <motion.div
@@ -307,14 +317,14 @@ export function ChatBot() {
                         )}
                       </div>
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white rounded-br-md'
                             : 'bg-gray-100 text-gray-800 rounded-bl-md'
                         }`}
                       >
                         <div
-                          className="text-sm whitespace-pre-wrap"
+                          className="text-sm whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere] chatbot-message"
                           dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
                         />
                         

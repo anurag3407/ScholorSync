@@ -219,15 +219,12 @@ function checkEligibility(
   return { eligible, reasons, missing };
 }
 
-// Generate chat response using Gemini
+// Generate chat response using OpenRouter (or fallback to Gemini)
 async function generateChatResponse(
   messages: ChatMessage[],
   scholarships: ScholarshipMatch[],
   profile?: UserProfile
 ): Promise<string> {
-  const ai = getGoogleAI();
-  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
-  
   // Build context from scholarships
   const scholarshipContext = scholarships.slice(0, 5).map((s, i) => 
     `${i + 1}. **${s.name}** (${s.provider})
@@ -259,6 +256,35 @@ GUIDELINES:
 9. If you don't know something, admit it and suggest checking official sources
 
 IMPORTANT: Only recommend scholarships from the context provided. Don't make up scholarship names or details.`;
+
+  // Use OpenRouter if API key is available
+  if (OPENROUTER_API_KEY) {
+    const openRouterMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages.map(m => ({ role: m.role, content: m.content })),
+    ];
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://scholarsync.app',
+        'X-Title': 'ScholarSync',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-001',
+        messages: openRouterMessages,
+      }),
+    });
+    
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+  }
+  
+  // Fallback to direct Gemini API
+  const ai = getGoogleAI();
+  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const chatHistory = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',

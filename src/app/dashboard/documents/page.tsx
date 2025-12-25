@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
   CheckCircle, 
@@ -40,6 +47,8 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [profileComplete, setProfileComplete] = useState(false);
   const [documents, setDocuments] = useState<Record<string, UserDocument>>({});
+  const [viewingDoc, setViewingDoc] = useState<{ type: string; doc: UserDocument } | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && isConfigured) {
@@ -109,6 +118,42 @@ export default function DocumentsPage() {
       console.error(error);
     } finally {
       setUploading(null);
+    }
+  };
+
+  const handleDelete = async (docType: string) => {
+    if (!user) return;
+    
+    setDeleting(docType);
+    try {
+      const response = await fetch('/api/documents/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid, documentType: docType }),
+      });
+
+      if (response.ok) {
+        setDocuments(prev => {
+          const newDocs = { ...prev };
+          delete newDocs[docType];
+          return newDocs;
+        });
+        toast.success('Document deleted successfully!');
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      toast.error('Failed to delete document. Please try again.');
+      console.error(error);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleView = (docType: string) => {
+    const doc = documents[docType];
+    if (doc) {
+      setViewingDoc({ type: docType, doc });
     }
   };
 
@@ -274,11 +319,26 @@ export default function DocumentsPage() {
                       {documents[docType.id].name}
                     </p>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1 gap-1"
+                        onClick={() => handleView(docType.id)}
+                      >
                         <Eye className="h-3 w-3" /> View
                       </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-3 w-3" />
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDelete(docType.id)}
+                        disabled={deleting === docType.id}
+                      >
+                        {deleting === docType.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -319,6 +379,39 @@ export default function DocumentsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Document Dialog */}
+      <Dialog open={!!viewingDoc} onOpenChange={(open) => !open && setViewingDoc(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {viewingDoc ? requiredDocumentTypes.find(d => d.id === viewingDoc.type)?.name : 'Document'}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingDoc?.doc.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {viewingDoc?.doc.fileUrl && (
+              viewingDoc.doc.fileUrl.startsWith('data:application/pdf') || 
+              viewingDoc.doc.fileUrl.endsWith('.pdf') ? (
+                <iframe
+                  src={viewingDoc.doc.fileUrl}
+                  className="w-full h-[500px] rounded-lg border"
+                  title="Document Preview"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={viewingDoc.doc.fileUrl}
+                  alt="Document Preview"
+                  className="max-w-full h-auto rounded-lg mx-auto"
+                />
+              )
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

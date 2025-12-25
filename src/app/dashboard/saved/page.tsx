@@ -180,7 +180,7 @@ export default function SavedScholarshipsPage() {
                 </div>
 
                 <p className="text-sm text-muted-foreground line-clamp-3">
-                  {scholarship.description}
+                  {scholarship.description || scholarship.eligibilityText}
                 </p>
 
                 <div className="flex gap-2 pt-2">

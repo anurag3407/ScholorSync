@@ -1,15 +1,22 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 
-// Initialize Gemini 2.5 Flash model for chat/completion
-export const geminiModel = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.5-flash-preview-05-20',
-  apiKey: process.env.GOOGLE_API_KEY,
+// Initialize model via OpenRouter (OpenAI-compatible API)
+export const geminiModel = new ChatOpenAI({
+  model: 'google/gemini-2.0-flash-001',
+  apiKey: process.env.OPENROUTER_API_KEY,
   temperature: 0.7,
-  maxOutputTokens: 2048,
+  maxTokens: 2048,
+  configuration: {
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://scholarsync.app',
+      'X-Title': 'ScholarSync',
+    },
+  },
 });
 
-// Initialize Gemini embeddings for vector search
+// Initialize Gemini embeddings for vector search (embeddings are still free tier)
 export const geminiEmbeddings = new GoogleGenerativeAIEmbeddings({
   model: 'text-embedding-004',
   apiKey: process.env.GOOGLE_API_KEY,

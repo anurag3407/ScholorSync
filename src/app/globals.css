@@ -123,3 +123,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Chatbot message styling */
+.chatbot-message a {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.chatbot-message li {
+  margin-left: 1rem;
+  list-style-position: inside;
+}
+
+.chatbot-message ul,
+.chatbot-message ol {
+  padding-left: 0.5rem;
+}

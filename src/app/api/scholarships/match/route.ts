@@ -15,76 +15,89 @@ function calculateMatchPercentage(profile: UserProfile, scholarship: Scholarship
   let score = 0;
   let maxScore = 0;
 
+  // Safety check for eligibility object
+  const eligibility = scholarship.eligibility || {};
+  const categories = eligibility.categories || [];
+  const states = eligibility.states || [];
+  const incomeLimit = eligibility.incomeLimit || 0;
+  const minPercentage = eligibility.minPercentage || 0;
+  const gender = eligibility.gender || 'all';
+  const yearRange = eligibility.yearRange || [1, 6];
+
   // Category match (25 points)
   maxScore += 25;
   if (
-    scholarship.eligibility.categories.includes('all') ||
-    scholarship.eligibility.categories.includes(profile.category)
+    categories.length === 0 ||
+    categories.includes('all') ||
+    categories.includes(profile.category)
   ) {
     score += 25;
     matchReasons.push(`Category: ${profile.category}`);
   } else {
-    missingCriteria.push(`Requires: ${scholarship.eligibility.categories.join(', ')}`);
+    missingCriteria.push(`Requires: ${categories.join(', ')}`);
   }
 
   // Income check (20 points)
   maxScore += 20;
-  if (profile.income <= scholarship.eligibility.incomeLimit) {
+  if (incomeLimit === 0 || profile.income <= incomeLimit) {
     score += 20;
     matchReasons.push('Income within limit');
   } else {
-    missingCriteria.push(`Income exceeds ₹${scholarship.eligibility.incomeLimit.toLocaleString()}`);
+    missingCriteria.push(`Income exceeds ₹${incomeLimit.toLocaleString()}`);
   }
 
   // Percentage check (20 points)
   maxScore += 20;
-  if (profile.percentage >= scholarship.eligibility.minPercentage) {
+  if (profile.percentage >= minPercentage) {
     score += 20;
     matchReasons.push(`Academic: ${profile.percentage}%`);
   } else {
-    missingCriteria.push(`Requires ${scholarship.eligibility.minPercentage}% marks`);
+    missingCriteria.push(`Requires ${minPercentage}% marks`);
   }
 
   // State match (15 points)
   maxScore += 15;
   if (
-    scholarship.eligibility.states.includes('all') ||
-    scholarship.eligibility.states.includes(profile.state)
+    states.length === 0 ||
+    states.includes('all') ||
+    states.includes(profile.state)
   ) {
     score += 15;
     matchReasons.push(`State: ${profile.state}`);
   } else {
-    missingCriteria.push(`Available in: ${scholarship.eligibility.states.join(', ')}`);
+    missingCriteria.push(`Available in: ${states.join(', ')}`);
   }
 
-  // Branch match (10 points)
+  // Branch/Course match (10 points)
   maxScore += 10;
+  const branches = eligibility.branches || [];
   if (
-    scholarship.eligibility.branches.includes('all') ||
-    scholarship.eligibility.branches.some((b) =>
-      profile.branch.toLowerCase().includes(b.toLowerCase())
+    branches.length === 0 ||
+    branches.includes('all') ||
+    branches.some((b: string) =>
+      profile.branch?.toLowerCase().includes(b.toLowerCase())
     )
   ) {
     score += 10;
     matchReasons.push(`Branch: ${profile.branch}`);
   } else {
-    missingCriteria.push(`For branches: ${scholarship.eligibility.branches.join(', ')}`);
+    missingCriteria.push(`For branches: ${branches.join(', ')}`);
   }
 
   // Gender match (5 points)
   maxScore += 5;
   if (
-    scholarship.eligibility.gender === 'all' ||
-    scholarship.eligibility.gender === profile.gender
+    gender === 'all' ||
+    gender === profile.gender
   ) {
     score += 5;
   } else {
-    missingCriteria.push(`Only for ${scholarship.eligibility.gender}`);
+    missingCriteria.push(`Only for ${gender}`);
   }
 
   // Year match (5 points)
   maxScore += 5;
-  const [minYear, maxYear] = scholarship.eligibility.yearRange;
+  const [minYear, maxYear] = yearRange;
   if (profile.year >= minYear && profile.year <= maxYear) {
     score += 5;
     matchReasons.push(`Year ${profile.year}`);

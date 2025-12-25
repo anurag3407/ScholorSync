@@ -69,6 +69,7 @@ export interface Scholarship {
   };
   eligibility: ScholarshipEligibility;
   eligibilityText: string;
+  description?: string;
   deadline: string;
   applicationUrl: string;
   documentsRequired: string[];

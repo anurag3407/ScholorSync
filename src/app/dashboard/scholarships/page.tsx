@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,7 @@ export default function ScholarshipsPage() {
   const [matchedScholarships, setMatchedScholarships] = useState<ScholarshipMatch[]>([]);
   const [nearMissScholarships, setNearMissScholarships] = useState<ScholarshipMatch[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const hasAutoFetched = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user && isConfigured) {
@@ -247,6 +248,14 @@ export default function ScholarshipsPage() {
       setMatching(false);
     }
   };
+
+  // Auto-fetch scholarships when page loads and profile is complete
+  useEffect(() => {
+    if (!loading && !authLoading && user && profileComplete && !hasAutoFetched.current) {
+      hasAutoFetched.current = true;
+      findScholarships();
+    }
+  }, [loading, authLoading, user, profileComplete]);
 
   if (authLoading || loading) {
     return (

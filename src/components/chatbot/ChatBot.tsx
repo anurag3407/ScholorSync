@@ -257,11 +257,12 @@ export function ChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] sm:max-w-[420px]"
+            className="fixed bottom-6 right-6 z-50 w-[480px] max-w-[calc(100vw-2rem)] sm:max-w-[1000px]"
+            style={{ height: 'calc(100vh - 6rem)', maxHeight: '700px' }}
           >
-            <Card className="shadow-2xl border-0 overflow-hidden">
+            <Card className="shadow-2xl border-0 overflow-hidden flex flex-col h-full">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -294,7 +295,7 @@ export function ChatBot() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="h-[450px] p-4">
+              <ScrollArea className="flex-1 min-h-0 p-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
                     <motion.div
@@ -392,7 +393,7 @@ export function ChatBot() {
 
               {/* Suggested Questions */}
               {suggestedQuestions.length > 0 && messages.length < 4 && (
-                <div className="px-4 pb-2">
+                <div className="px-4 pb-2 flex-shrink-0">
                   <div className="flex flex-wrap gap-2">
                     {suggestedQuestions.slice(0, 3).map((question, index) => (
                       <Button
@@ -410,7 +411,7 @@ export function ChatBot() {
               )}
 
               {/* Input */}
-              <CardContent className="p-4 border-t">
+              <CardContent className="p-4 border-t flex-shrink-0">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

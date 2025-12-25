@@ -602,7 +602,7 @@ Vector Structure:
     "type": "state",
     "state": "Karnataka",
     "categories": ["sc"],
-    "deadline": "2025-03-15",
+    "deadline": "2026-03-15",
     "description": "Scholarship for SC students..."
   }
 }
@@ -825,5 +825,5 @@ Developer                GitHub                    Vercel
 
 <p align="center">
   <strong>ScholarSync Architecture v1.0</strong><br/>
-  Last Updated: January 2025
+  Last Updated: December 2025
 </p>

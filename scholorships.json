@@ -35,7 +35,7 @@
       ]
     },
     "eligibilityText": "SC students with family income up to 2.5 lakh studying in Class 11 onwards. Maintenance allowance and course fees covered.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "caste_certificate",
@@ -93,7 +93,7 @@
       ]
     },
     "eligibilityText": "ST students with family income up to 2.5 lakh per annum studying post-matric courses.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "tribe_certificate",
@@ -149,7 +149,7 @@
       ]
     },
     "eligibilityText": "OBC students with annual family income not exceeding Rs 1 lakh. Must have secured minimum 50% marks.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "obc_certificate",
@@ -202,7 +202,7 @@
       ]
     },
     "eligibilityText": "SC students in Class 9 and 10 with family income up to 2.5 lakh. Minimum 50% marks required.",
-    "deadline": "2025-11-30",
+    "deadline": "2026-11-30",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "caste_certificate",
@@ -263,7 +263,7 @@
       ]
     },
     "eligibilityText": "Students belonging to Muslim, Christian, Sikh, Buddhist, Jain, Parsi communities with family income up to Rs 1 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "minority_certificate",
@@ -323,7 +323,7 @@
       ]
     },
     "eligibilityText": "Minority students studying post-matric courses with family income up to Rs 2 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "minority_certificate",
@@ -376,7 +376,7 @@
       ]
     },
     "eligibilityText": "Minority students in professional/technical courses with 50% marks and family income up to 2.5 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "minority_certificate",
@@ -432,7 +432,7 @@
       ]
     },
     "eligibilityText": "SC students admitted to notified institutions (IITs, IIMs, NITs, AIIMS, etc.) with family income up to 8 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "caste_certificate",
@@ -491,7 +491,7 @@
       ]
     },
     "eligibilityText": "Students who passed Class 8 with 55% marks and cleared state-level NMMS exam. Family income up to 3.5 lakh.",
-    "deadline": "2025-08-31",
+    "deadline": "2026-08-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "nmms_result",
@@ -544,7 +544,7 @@
       ]
     },
     "eligibilityText": "Students scoring above 80th percentile in Class 12 board exams pursuing regular degree courses. Family income up to 8 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "class_12_marksheet",
@@ -601,7 +601,7 @@
       ]
     },
     "eligibilityText": "OBC/EBC/DNT students in Class 9-12 studying in top schools. Must clear PM YASASVI entrance test.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "caste_certificate",
@@ -661,7 +661,7 @@
       ]
     },
     "eligibilityText": "Students from North Eastern states pursuing UG courses with 60% in Class 12 and family income up to 4.5 lakh.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "domicile_certificate",
@@ -715,7 +715,7 @@
       ]
     },
     "eligibilityText": "One girl per family pursuing technical degree with family income up to 8 lakh. Only 2 girl children per family eligible.",
-    "deadline": "2025-11-30",
+    "deadline": "2026-11-30",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "income_certificate",
@@ -774,7 +774,7 @@
       "disabilities": true
     },
     "eligibilityText": "Differently abled students (40%+ disability) in AICTE approved institutions with family income up to 8 lakh.",
-    "deadline": "2025-11-30",
+    "deadline": "2026-11-30",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "disability_certificate",
@@ -830,7 +830,7 @@
       ]
     },
     "eligibilityText": "Orphan students or wards of armed forces/CAPF martyrs pursuing technical education.",
-    "deadline": "2025-11-30",
+    "deadline": "2026-11-30",
     "applicationUrl": "https://scholarships.gov.in",
     "documentsRequired": [
       "orphan_certificate",
@@ -884,7 +884,7 @@
       ]
     },
     "eligibilityText": "Students admitted to AICTE approved M.Tech/M.E./M.Pharm programs through valid GATE/GPAT score.",
-    "deadline": "2025-12-31",
+    "deadline": "2026-12-31",
     "applicationUrl": "https://aicte-india.org",
     "documentsRequired": [
       "gate_scorecard",
@@ -939,7 +939,7 @@
       ]
     },
     "eligibilityText": "Students pursuing basic science courses who clear KVPY aptitude test. 75% in Class 10/12.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "http://kvpy.iisc.ac.in",
     "documentsRequired": [
       "kvpy_result",
@@ -991,7 +991,7 @@
       ]
     },
     "eligibilityText": "Students in top 1% of Class 12 board exams pursuing BSc/BS in natural sciences.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://online-inspire.gov.in",
     "documentsRequired": [
       "marksheet",
@@ -1043,7 +1043,7 @@
       ]
     },
     "eligibilityText": "Candidates who qualify UGC NET with JRF pursuing PhD in humanities/social sciences/sciences.",
-    "deadline": "2025-12-31",
+    "deadline": "2026-12-31",
     "applicationUrl": "https://ugcnet.nta.nic.in",
     "documentsRequired": [
       "net_jrf_certificate",
@@ -1097,7 +1097,7 @@
       ]
     },
     "eligibilityText": "MSc in science subjects qualifying CSIR NET with JRF for PhD in science disciplines.",
-    "deadline": "2025-12-31",
+    "deadline": "2026-12-31",
     "applicationUrl": "https://csirnet.nta.nic.in",
     "documentsRequired": [
       "csir_jrf_certificate",
@@ -1150,7 +1150,7 @@
       ]
     },
     "eligibilityText": "Top performers from IITs/IISc/NITs/IIITs pursuing direct PhD with 8.0+ CGPA.",
-    "deadline": "2025-04-30",
+    "deadline": "2026-04-30",
     "applicationUrl": "https://pmrf.in",
     "documentsRequired": [
       "btech_marksheet",
@@ -1206,7 +1206,7 @@
       ]
     },
     "eligibilityText": "Students from economically weaker families with 60%+ marks pursuing education from Class 11 onwards.",
-    "deadline": "2025-08-31",
+    "deadline": "2026-08-31",
     "applicationUrl": "https://sjfindia.org",
     "documentsRequired": [
       "income_certificate",
@@ -1258,7 +1258,7 @@
       ]
     },
     "eligibilityText": "Students from low-income families pursuing higher education with consistent academic performance.",
-    "deadline": "2025-07-31",
+    "deadline": "2026-07-31",
     "applicationUrl": "https://tatatrusts.org",
     "documentsRequired": [
       "income_certificate",
@@ -1313,7 +1313,7 @@
       ]
     },
     "eligibilityText": "Students from economically weaker sections with 55%+ marks and family income up to 6 lakh.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "https://buddy4study.com/scholarship/hdfc-ecss",
     "documentsRequired": [
       "income_certificate",
@@ -1369,7 +1369,7 @@
       ]
     },
     "eligibilityText": "Meritorious students from financially challenged backgrounds in UG professional courses.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://reliancefoundation.org/scholarships",
     "documentsRequired": [
       "income_certificate",
@@ -1420,7 +1420,7 @@
       ]
     },
     "eligibilityText": "Students in top 50 NIRF engineering colleges with focus on girls from diverse socio-economic backgrounds.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "https://bhartifoundation.org/scholarship",
     "documentsRequired": [
       "income_certificate",
@@ -1472,7 +1472,7 @@
       ]
     },
     "eligibilityText": "Girl students with 75%+ in Class 12 and family income up to 6 lakh pursuing professional graduation.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "https://buddy4study.com/scholarship/kotak-kanya",
     "documentsRequired": [
       "class_12_marksheet",
@@ -1523,7 +1523,7 @@
       ]
     },
     "eligibilityText": "Students in 2nd year BTech with 60%+ in 1st year from AICTE approved colleges.",
-    "deadline": "2025-09-30",
+    "deadline": "2026-09-30",
     "applicationUrl": "https://lntscholarships.com",
     "documentsRequired": [
       "income_certificate",
@@ -1575,7 +1575,7 @@
       ]
     },
     "eligibilityText": "Multiple corporate scholarships aggregated on Vidyasaarathi platform for various categories of students.",
-    "deadline": "2025-10-31",
+    "deadline": "2026-10-31",
     "applicationUrl": "https://vidyasaarathi.co.in",
     "documentsRequired": [
       "income_certificate",
@@ -1628,7 +1628,7 @@
       ]
     },
     "eligibilityText": "Women aged 15-30 pursuing graduation/post-graduation with family income up to 6 lakh.",
-    "deadline": "2025-03-31",
+    "deadline": "2026-03-31",
     "applicationUrl": "https://buddy4study.com/scholarship/glow-lovely",
     "documentsRequired": [
       "income_certificate",

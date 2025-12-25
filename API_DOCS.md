@@ -124,7 +124,7 @@ curl -X GET "https://scholarsync.vercel.app/api/scholarships?state=Maharashtra&l
         "min": 10000,
         "max": 25000
       },
-      "deadline": "2025-03-15",
+      "deadline": "2026-03-15",
       "eligibility": {
         "categories": ["SC", "ST", "OBC"],
         "incomeLimit": 250000,
@@ -201,7 +201,7 @@ POST /api/scholarships/save
 {
   "success": true,
   "message": "Scholarship saved successfully",
-  "savedAt": "2025-01-29T10:30:00Z"
+  "savedAt": "2026-01-29T10:30:00Z"
 }
 ```
 
@@ -233,7 +233,7 @@ POST /api/scholarships/explain
       "Focus on your academic achievements",
       "Highlight extracurricular activities"
     ],
-    "deadline": "Apply before March 15, 2025",
+    "deadline": "Apply before March 15, 2026",
     "documentsNeeded": [
       "Income Certificate",
       "Marksheet",
@@ -320,7 +320,7 @@ GET /api/profile?uid=<user_uid>
     {
       "id": "sch_001",
       "status": "applied",
-      "appliedOn": "2025-01-15T10:00:00Z"
+      "appliedOn": "2026-01-15T10:00:00Z"
     }
   ]
 }
@@ -380,7 +380,7 @@ POST /api/chatbot
 ```json
 {
   "success": true,
-  "response": "Here are the top scholarships for SC students in Karnataka:\n\n1. **Karnataka Post Matric SC Scholarship** - ₹20,000/year\n   - Deadline: March 15, 2025\n   - For: SC students with income < 2.5 lakhs\n\n2. **Central Sector Scheme** - ₹20,000/year\n   - Deadline: December 31, 2025\n   - For: SC students with 80%+ marks",
+  "response": "Here are the top scholarships for SC students in Karnataka:\n\n1. **Karnataka Post Matric SC Scholarship** - ₹20,000/year\n   - Deadline: March 15, 2026\n   - For: SC students with income < 2.5 lakhs\n\n2. **Central Sector Scheme** - ₹20,000/year\n   - Deadline: December 31, 2026\n   - For: SC students with 80%+ marks",
   "sources": [
     {
       "title": "Karnataka Post Matric SC",
@@ -468,9 +468,9 @@ GET /api/analytics?userId=<user_uid>
     },
     "trends": {
       "matchScoreHistory": [
-        { "date": "2025-01-01", "score": 75 },
-        { "date": "2025-01-15", "score": 82 },
-        { "date": "2025-01-29", "score": 85 }
+        { "date": "2026-01-01", "score": 75 },
+        { "date": "2026-01-15", "score": 82 },
+        { "date": "2026-01-29", "score": 85 }
       ]
     }
   }
@@ -509,9 +509,9 @@ POST /api/stacking
       "conflicts": [],
       "applicationOrder": ["sch_002", "sch_001", "sch_004"],
       "timeline": {
-        "sch_002": "2025-02-15",
-        "sch_001": "2025-03-01",
-        "sch_004": "2025-03-31"
+        "sch_002": "2026-02-15",
+        "sch_001": "2026-03-01",
+        "sch_004": "2026-03-31"
       }
     },
     {
@@ -550,7 +550,7 @@ GET /api/calendar?userId=<user_uid>
       "id": "dl_001",
       "scholarshipId": "sch_001",
       "scholarshipName": "NSP Post Matric",
-      "deadline": "2025-03-15",
+      "deadline": "2026-03-15",
       "daysLeft": 45,
       "priority": "high",
       "status": "upcoming"
@@ -561,7 +561,7 @@ GET /api/calendar?userId=<user_uid>
       "id": "rem_001",
       "type": "deadline",
       "message": "NSP Post Matric deadline in 7 days",
-      "date": "2025-03-08"
+      "date": "2026-03-08"
     }
   ]
 }
@@ -622,7 +622,7 @@ GET /api/community?type=<stories|discussions>&page=1&limit=10
       "likes": 42,
       "comments": 12,
       "tags": ["INSPIRE", "Science", "Tips"],
-      "createdAt": "2025-01-15T10:00:00Z"
+      "createdAt": "2026-01-15T10:00:00Z"
     }
   ],
   "pagination": {
@@ -662,7 +662,7 @@ POST /api/community
     "id": "post_002",
     "type": "story",
     "title": "My scholarship journey",
-    "createdAt": "2025-01-29T10:30:00Z"
+    "createdAt": "2026-01-29T10:30:00Z"
   }
 }
 ```
@@ -877,11 +877,11 @@ Configure webhooks to receive real-time updates:
 ```json
 {
   "event": "deadline.approaching",
-  "timestamp": "2025-01-29T10:30:00Z",
+  "timestamp": "2026-01-29T10:30:00Z",
   "data": {
     "scholarshipId": "sch_001",
     "scholarshipName": "NSP Post Matric",
-    "deadline": "2025-02-05",
+    "deadline": "2026-02-05",
     "daysLeft": 7
   }
 }

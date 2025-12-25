@@ -70,7 +70,7 @@ AI Chatbot guides him:
     2. Caste certificate (if applicable)
     3. 12th marksheet
     
-    Deadline: March 15, 2025
+    Deadline: March 15, 2026
     I've added this to your calendar."
 ```
 
@@ -240,15 +240,15 @@ Suggestion: Apply for Institute Merit Scholarship
 │  ACTIVE SCHOLARSHIPS                   Total: ₹3,15,000 │
 ├─────────────────────────────────────────────────────────┤
 │  1. INSPIRE SHE              ₹80,000    ✓ Active        │
-│     Next Renewal: March 2025                            │
+│     Next Renewal: March 2026                            │
 │     Requirement: Submit progress report                 │
 │                                                         │
 │  2. State Medical Scholarship ₹1,50,000  ⚠️ Due Soon    │
-│     Next Renewal: February 2025                         │
+│     Next Renewal: February 2026                        │
 │     Requirement: Attendance certificate (85%+)          │
 │                                                         │
 │  3. Private Foundation       ₹85,000    ✓ Active        │
-│     Next Renewal: July 2025                             │
+│     Next Renewal: January 2026                             │
 │     Requirement: Essay on rural healthcare              │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -583,7 +583,7 @@ WOMEN IN SCIENCE:
 ```
 Upcoming Conferences in Computational Biology:
 
-1. ISMB 2025, Los Angeles (July)
+1. ISMB 2026, Los Angeles (July)
    Registration: $500 | Travel: ₹1,50,000
    
    Applicable Grants:

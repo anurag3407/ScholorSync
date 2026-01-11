@@ -14,7 +14,23 @@ export async function GET(request: NextRequest) {
       scholarships = await getAllScholarships();
     }
 
-    return NextResponse.json(scholarships);
+    // Sort scholarships to show admin-created ones first
+    const sortedScholarships = scholarships.sort((a: any, b: any) => {
+      // Admin priority scholarships come first
+      if (a.adminPriority && !b.adminPriority) return -1;
+      if (!a.adminPriority && b.adminPriority) return 1;
+      
+      // Then sort by createdByAdmin
+      if (a.createdByAdmin && !b.createdByAdmin) return -1;
+      if (!a.createdByAdmin && b.createdByAdmin) return 1;
+      
+      // Then sort by deadline
+      const dateA = new Date(a.deadline || '2099-12-31').getTime();
+      const dateB = new Date(b.deadline || '2099-12-31').getTime();
+      return dateA - dateB;
+    });
+
+    return NextResponse.json(sortedScholarships);
   } catch (error) {
     console.error('Error fetching scholarships:', error);
     return NextResponse.json(

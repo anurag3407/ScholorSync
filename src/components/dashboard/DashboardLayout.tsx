@@ -31,6 +31,7 @@ import {
   Bookmark,
   Target,
   Lightbulb,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,11 @@ const sidebarItems = [
     title: 'Scholarship Radar',
     href: '/dashboard/scholarships',
     icon: GraduationCap,
+  },
+  {
+    title: 'My Applications',
+    href: '/dashboard/applications',
+    icon: ClipboardList,
   },
   {
     title: 'Saved Scholarships',

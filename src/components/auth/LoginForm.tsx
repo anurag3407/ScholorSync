@@ -11,6 +11,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
+// Admin credentials
+const ADMIN_EMAIL = 'admin123@gmail.com';
+
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +29,12 @@ export function LoginForm() {
 
     try {
       await signIn(email, password);
-      router.push('/dashboard');
+      // Redirect admin to admin panel, regular users to dashboard
+      if (email === ADMIN_EMAIL) {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {

@@ -22,6 +22,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isConfigured: boolean;
+  isAdmin: boolean;
+  adminCredentials: { email: string; password: string } | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -32,6 +34,10 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Admin credentials
+const ADMIN_EMAIL = 'admin123@gmail.com';
+const ADMIN_PASSWORD = 'admin123';
 
 // Helper to parse Firebase auth errors into user-friendly messages
 function getAuthErrorMessage(error: AuthError): string {
@@ -78,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState<{ email: string; password: string } | null>(null);
 
   // Fetch user data from Firestore
   const fetchUserData = async (firebaseUser: FirebaseUser, createIfMissing = false) => {
@@ -178,12 +186,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
+    // Check for admin login
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      setIsAdmin(true);
+      setAdminCredentials({ email, password });
+      setUser({
+        uid: 'admin',
+        email: ADMIN_EMAIL,
+        profile: {
+          name: 'Administrator',
+          category: 'General',
+          income: 0,
+          percentage: 0,
+          branch: '',
+          year: 1,
+          state: '',
+          college: '',
+          gender: 'Male',
+          achievements: [],
+        },
+        documents: {},
+        savedScholarships: [],
+        appliedScholarships: [],
+        notifications: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      setLoading(false);
+      return;
+    }
+
     if (!isFirebaseConfigured) {
       setError('Firebase is not configured. Please check your environment variables.');
       return;
     }
     
     setError(null);
+    setIsAdmin(false);
+    setAdminCredentials(null);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await fetchUserData(result.user);
@@ -304,6 +344,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setError(null);
     try {
+      // Handle admin logout
+      if (isAdmin) {
+        setIsAdmin(false);
+        setAdminCredentials(null);
+        setUser(null);
+        return;
+      }
       await signOut(auth);
       setUser(null);
       setFirebaseUser(null);
@@ -346,6 +393,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     isConfigured: Boolean(isFirebaseConfigured),
+    isAdmin,
+    adminCredentials,
     signIn,
     signUp,
     signInWithGoogle,

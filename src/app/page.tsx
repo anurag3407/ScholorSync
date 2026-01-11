@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,14 +10,20 @@ import {
   Users,
   Sparkles,
   ArrowRight,
-  CheckCircle,
   Target,
   Bell,
   Shield,
   Briefcase,
   Coins,
+  Rocket,
 } from 'lucide-react';
 import SkyToggle from '@/components/ui/sky-toggle';
+import { Banner } from '@/components/ui/banner';
+import { BGPattern } from '@/components/ui/bg-pattern';
+import { StaggerTestimonials } from '@/components/ui/stagger-testimonials';
+import { LogosCarousel } from '@/components/blocks/logos-carousel';
+import GlobeFeatureSection from '@/components/blocks/globe-feature-section';
+import { AnimatedFooter } from '@/components/blocks/animated-footer';
 
 const features = [
   {
@@ -64,10 +71,37 @@ const stats = [
 ];
 
 export default function Home() {
+  const [showBanner, setShowBanner] = useState(true);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-[#0a0a12] dark:to-[#0d0d18]">
+      {/* Announcement Banner */}
+      <Banner
+        show={showBanner}
+        onHide={() => setShowBanner(false)}
+        variant="teal"
+        title="🎉 New: Micro-Fellowships launched! Earn while you learn."
+        description="Solve real business challenges and get paid"
+        showShade={true}
+        closable={true}
+        icon={<Rocket className="h-4 w-4" />}
+        className="fixed top-0 left-0 right-0 z-[60] rounded-none border-x-0 border-t-0"
+        action={
+          <Link href="/fellowships">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1 text-teal-900 hover:text-teal-950 hover:bg-teal-100 dark:text-teal-100 dark:hover:bg-teal-800/50"
+            >
+              Explore
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+        }
+      />
+
       {/* Navigation */}
-      <nav className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-teal-900/30 dark:bg-[#0a0a12]/90">
+      <nav className={`fixed ${showBanner ? 'top-10' : 'top-0'} z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-teal-900/30 dark:bg-[#0a0a12]/90 transition-all duration-300`}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-teal-600 dark:text-teal-400" />
@@ -97,7 +131,16 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-32">
+      <section className={`relative overflow-hidden ${showBanner ? 'pt-36' : 'pt-32'} pb-20 sm:pt-40 sm:pb-32 transition-all duration-300`}>
+        {/* Background Pattern */}
+        <BGPattern
+          variant="dots"
+          mask="fade-edges"
+          size={32}
+          fill="hsl(var(--muted-foreground) / 0.15)"
+          className="opacity-50"
+        />
+
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-r from-teal-50 via-transparent to-emerald-50 dark:from-teal-950/20 dark:via-transparent dark:to-emerald-950/20" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-gradient-to-b from-teal-400/20 to-transparent blur-3xl dark:from-teal-500/10" />
@@ -151,6 +194,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trusted By Section */}
+      <section className="py-12 border-y border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20">
+        <LogosCarousel heading="Trusted by students from top universities" />
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -181,8 +229,15 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="bg-slate-50 py-20 sm:py-32 dark:bg-[#0d0d14]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section id="how-it-works" className="relative bg-slate-50 py-20 sm:py-32 dark:bg-[#0d0d14] overflow-hidden">
+        <BGPattern
+          variant="grid"
+          mask="fade-center"
+          size={48}
+          fill="hsl(var(--muted-foreground) / 0.08)"
+        />
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
               Get Started in 3 Simple Steps
@@ -212,56 +267,23 @@ export default function Home() {
       {/* Testimonials */}
       <section id="testimonials" className="py-20 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto max-w-2xl text-center mb-12">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
               Students Love ScholarSync
             </h2>
+            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+              See what students from top universities have to say about their experience.
+            </p>
           </div>
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-800/50 dark:bg-[#111118]">
-              <div className="flex gap-1 text-amber-500">
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-              </div>
-              <p className="mt-4 text-slate-600 dark:text-slate-400">&quot;ScholarSync helped me find 5 scholarships I didn&apos;t even know existed. I&apos;ve already received Rs.50,000 in funding!&quot;</p>
-              <div className="mt-6">
-                <div className="font-semibold text-slate-900 dark:text-white">Priya Sharma</div>
-                <div className="text-sm text-slate-500 dark:text-slate-500">Engineering Student, IIT Delhi</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-800/50 dark:bg-[#111118]">
-              <div className="flex gap-1 text-amber-500">
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-              </div>
-              <p className="mt-4 text-slate-600 dark:text-slate-400">&quot;The Why Not Me feature showed me exactly what I needed to qualify for more scholarships. Game changer!&quot;</p>
-              <div className="mt-6">
-                <div className="font-semibold text-slate-900 dark:text-white">Rahul Patel</div>
-                <div className="text-sm text-slate-500 dark:text-slate-500">Medical Student, AIIMS</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-800/50 dark:bg-[#111118]">
-              <div className="flex gap-1 text-amber-500">
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-                <CheckCircle className="h-5 w-5 fill-current" />
-              </div>
-              <p className="mt-4 text-slate-600 dark:text-slate-400">&quot;Document vault saved me hours of work. Upload once and auto-fill applications everywhere.&quot;</p>
-              <div className="mt-6">
-                <div className="font-semibold text-slate-900 dark:text-white">Ananya Gupta</div>
-                <div className="text-sm text-slate-500 dark:text-slate-500">Commerce Student, SRCC</div>
-              </div>
-            </div>
-          </div>
+          <StaggerTestimonials />
+        </div>
+      </section>
+
+      {/* Globe Section */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <GlobeFeatureSection />
         </div>
       </section>
 
@@ -287,29 +309,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-12 dark:border-teal-900/30 dark:bg-[#0a0a12]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-              <span className="font-semibold text-slate-900 dark:text-white">ScholarSync</span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-              <Link href="#" className="hover:text-slate-900 dark:hover:text-teal-400 transition-colors">Privacy Policy</Link>
-              <Link href="#" className="hover:text-slate-900 dark:hover:text-teal-400 transition-colors">Terms of Service</Link>
-              <Link href="#" className="hover:text-slate-900 dark:hover:text-teal-400 transition-colors">Contact</Link>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-500">
-              <Shield className="h-4 w-4" />
-              <span>Your data is secure</span>
-            </div>
-          </div>
-          <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-500">
-            2024 ScholarSync. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Animated Footer */}
+      <AnimatedFooter />
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
     GraduationCap,
     Building2,
     Sparkles,
+    Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SkyToggle from '@/components/ui/sky-toggle';
@@ -38,6 +39,7 @@ interface NavItem {
     href: string;
     icon: React.ElementType;
     roles: UserRole[];
+    adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -71,6 +73,13 @@ const navItems: NavItem[] = [
         icon: Home,
         roles: ['student', 'corporate'],
     },
+    {
+        title: 'Admin Panel',
+        href: '/fellowships/admin',
+        icon: Shield,
+        roles: ['student', 'corporate'],
+        adminOnly: true,
+    },
 ];
 
 export default function FellowshipsLayout({
@@ -78,7 +87,7 @@ export default function FellowshipsLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, isAdmin } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -112,7 +121,13 @@ export default function FellowshipsLayout({
     }
 
     const filteredNavItems = navItems.filter(
-        (item) => !userRole || item.roles.includes(userRole)
+        (item) => {
+            // Filter by role
+            if (userRole && !item.roles.includes(userRole)) return false;
+            // Filter admin-only items
+            if (item.adminOnly && !isAdmin) return false;
+            return true;
+        }
     );
 
     const isVerified = (user as unknown as { isVerified?: boolean })?.isVerified;

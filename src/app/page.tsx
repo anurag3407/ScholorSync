@@ -5,17 +5,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   GraduationCap,
-  FileText,
-  Receipt,
-  Users,
-  Sparkles,
   ArrowRight,
-  Target,
-  Bell,
-  Shield,
   Briefcase,
-  Coins,
   Rocket,
+  Sparkles,
 } from 'lucide-react';
 import SkyToggle from '@/components/ui/sky-toggle';
 import { Banner } from '@/components/ui/banner';
@@ -26,46 +19,9 @@ import GlobeFeatureSection from '@/components/blocks/globe-feature-section';
 import { AnimatedFooter } from '@/components/blocks/animated-footer';
 import BentoGridDemo from '@/components/blocks/bento-grid-demo';
 import AppleCardsCarouselDemo from '@/components/blocks/apple-cards-carousel-demo';
+import FeaturesSection from '@/components/blocks/features-section';
 import { ShootingStars } from '@/components/ui/shooting-stars';
 import { StarsBackground } from '@/components/ui/stars-background';
-
-const features = [
-  {
-    icon: Target,
-    title: 'Scholarship Radar',
-    description: 'AI-powered matching finds scholarships you actually qualify for with personalized match scores.',
-  },
-  {
-    icon: Sparkles,
-    title: 'Why Not Me? Analyzer',
-    description: 'Discover near-miss scholarships and get actionable steps to become eligible.',
-  },
-  {
-    icon: FileText,
-    title: 'Document Vault',
-    description: 'Upload once, auto-fill everywhere. OCR extracts data from your documents automatically.',
-  },
-  {
-    icon: Receipt,
-    title: 'Fee Anomaly Detector',
-    description: 'Compare your fees against official structures to catch discrepancies instantly.',
-  },
-  {
-    icon: Bell,
-    title: 'Smart Notifications',
-    description: 'Never miss a deadline with personalized alerts for scholarships and applications.',
-  },
-  {
-    icon: Users,
-    title: 'Community Intelligence',
-    description: 'Learn from successful applicants and share insights with fellow students.',
-  },
-  {
-    icon: Coins,
-    title: 'Micro-Fellowships',
-    description: 'Earn money by solving real business challenges. Get paid while building your portfolio.',
-  },
-];
 
 const stats = [
   { value: '10,000+', label: 'Scholarships Tracked' },
@@ -215,20 +171,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative rounded-2xl border border-slate-200 bg-white p-8 transition-all hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 dark:border-slate-800/50 dark:bg-[#111118] dark:hover:border-teal-700/50 dark:hover:shadow-teal-500/5"
-              >
-                <div className="mb-4 inline-flex rounded-xl bg-teal-100 p-3 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
-                  <feature.icon className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
-                <p className="mt-2 text-slate-600 dark:text-slate-400">{feature.description}</p>
-              </div>
-            ))}
-          </div>
+          <FeaturesSection />
         </div>
       </section>
 

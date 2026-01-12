@@ -24,6 +24,10 @@ import { StaggerTestimonials } from '@/components/ui/stagger-testimonials';
 import { LogosCarousel } from '@/components/blocks/logos-carousel';
 import GlobeFeatureSection from '@/components/blocks/globe-feature-section';
 import { AnimatedFooter } from '@/components/blocks/animated-footer';
+import BentoGridDemo from '@/components/blocks/bento-grid-demo';
+import AppleCardsCarouselDemo from '@/components/blocks/apple-cards-carousel-demo';
+import { ShootingStars } from '@/components/ui/shooting-stars';
+import { StarsBackground } from '@/components/ui/stars-background';
 
 const features = [
   {
@@ -264,6 +268,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Bento Grid Features Showcase */}
+      <section className="py-20 sm:py-32 bg-slate-50/50 dark:bg-[#0a0a12]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+              Powerful Features at a Glance
+            </h2>
+            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+              Everything you need to discover, apply, and secure funding for your education.
+            </p>
+          </div>
+          <BentoGridDemo />
+        </div>
+      </section>
+
+      {/* Success Stories Carousel */}
+      <section className="py-10 sm:py-16 overflow-hidden">
+        <AppleCardsCarouselDemo />
+      </section>
+
       {/* Testimonials */}
       <section id="testimonials" className="py-20 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -287,19 +311,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-teal-600 to-emerald-600 py-20 dark:from-teal-700 dark:to-emerald-700">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {/* CTA Section with Stars */}
+      <section className="relative bg-gradient-to-r from-teal-600 to-emerald-600 py-20 dark:from-slate-900 dark:to-slate-900 overflow-hidden">
+        {/* Stars background - only visible in dark mode */}
+        <div className="absolute inset-0 dark:block hidden">
+          <StarsBackground starDensity={0.0003} />
+          <ShootingStars starColor="#14b8a6" trailColor="#10b981" />
+        </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Ready to Find Your Scholarships?
             </h2>
-            <p className="mt-4 text-lg text-teal-100">
+            <p className="mt-4 text-lg text-teal-100 dark:text-slate-300">
               Join 50,000+ students who are already using ScholarSync to fund their education.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/auth/register">
-                <Button size="lg" variant="secondary" className="gap-2 bg-white text-teal-700 hover:bg-teal-50">
+                <Button size="lg" variant="secondary" className="gap-2 bg-white text-teal-700 hover:bg-teal-50 dark:bg-teal-500 dark:text-white dark:hover:bg-teal-600">
                   Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Button>

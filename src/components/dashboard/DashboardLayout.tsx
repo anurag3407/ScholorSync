@@ -32,6 +32,7 @@ import {
   Target,
   Lightbulb,
   ClipboardList,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SkyToggle from '@/components/ui/sky-toggle';
@@ -81,6 +82,11 @@ const sidebarItems = [
     title: 'Smart Insights',
     href: '/dashboard/insights',
     icon: Lightbulb,
+  },
+  {
+    title: 'Fellowships',
+    href: '/fellowships/challenges',
+    icon: Briefcase,
   },
 ];
 

@@ -79,6 +79,9 @@ app.prepare().then(() => {
                 socketId: socket.id
             });
 
+            // Get updated user list
+            const users = getUsersInRoom(roomId);
+
             // Notify others in room
             socket.to(roomId).emit(SOCKET_EVENTS.USER_JOINED, {
                 roomId,
@@ -88,10 +91,12 @@ app.prepare().then(() => {
             });
 
             // Send current room users to the new user
-            const users = getUsersInRoom(roomId);
             socket.emit(SOCKET_EVENTS.ROOM_USERS, { roomId, users });
 
-            console.log(`[Socket.IO] User ${userName} joined room ${roomId}`);
+            // Also broadcast updated user list to all clients in room
+            socket.to(roomId).emit(SOCKET_EVENTS.ROOM_USERS, { roomId, users });
+
+            console.log(`[Socket.IO] User ${userName} joined room ${roomId} (${users.length} users now)`);
         });
 
         // Handle leaving a room
@@ -107,19 +112,23 @@ app.prepare().then(() => {
                     userName: currentUser.name,
                     userRole: currentUser.role,
                 });
+
+                // Broadcast updated user list
+                const users = getUsersInRoom(roomId);
+                io.to(roomId).emit(SOCKET_EVENTS.ROOM_USERS, { roomId, users });
             }
 
+            console.log(`[Socket.IO] User ${currentUser?.name || 'unknown'} left room ${roomId}`);
             currentRoom = null;
-            console.log(`[Socket.IO] User left room ${roomId}`);
         });
 
         // Handle sending messages
         socket.on(SOCKET_EVENTS.SEND_MESSAGE, (payload) => {
-            const { roomId, ...messageData } = payload;
+            const { roomId, messageId, ...messageData } = payload;
 
-            // Create message with ID and timestamp
+            // Use client-provided ID if available, otherwise generate one
             const message = {
-                id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: messageId || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 roomId,
                 ...messageData,
                 createdAt: new Date().toISOString(),
@@ -127,7 +136,7 @@ app.prepare().then(() => {
 
             // Broadcast to all in room including sender
             io.to(roomId).emit(SOCKET_EVENTS.NEW_MESSAGE, message);
-            console.log(`[Socket.IO] Message sent in room ${roomId}`);
+            console.log(`[Socket.IO] Message sent in room ${roomId}: ${message.id}`);
         });
 
         // Handle typing indicators
@@ -168,6 +177,10 @@ app.prepare().then(() => {
                     userName: currentUser.name,
                     userRole: currentUser.role,
                 });
+
+                // Broadcast updated user list on disconnect
+                const users = getUsersInRoom(currentRoom);
+                io.to(currentRoom).emit(SOCKET_EVENTS.ROOM_USERS, { roomId: currentRoom, users });
             }
             console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
         });
@@ -206,3 +219,4 @@ app.prepare().then(() => {
         console.log(`> Socket.IO server running`);
     });
 });
+

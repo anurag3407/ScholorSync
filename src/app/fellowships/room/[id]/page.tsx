@@ -148,43 +148,44 @@ export default function ProjectRoomPage() {
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !room || !user) return;
 
+        const messageContent = newMessage.trim();
         setSending(true);
+        setNewMessage(''); // Clear input immediately for better UX
+
         try {
-            // Use Socket.IO to send message (real-time delivery)
+            // Send via Socket.IO for real-time delivery
+            // The server will broadcast to all users in the room (including sender)
             if (isConnected) {
-                socketSendMessage(newMessage.trim(), 'text');
+                socketSendMessage(messageContent, 'text');
             }
 
-            // Also save to Firestore for persistence
+            // Save to Firestore for persistence (independent of Socket.IO)
             await createRoomMessage({
                 roomId: room.id,
                 senderId: user.uid,
                 senderName: user.profile?.name || 'User',
                 senderRole: userRole,
-                content: newMessage.trim(),
+                content: messageContent,
                 type: 'text',
             });
-
-            setNewMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
-            // For demo, add message locally
+            // Fallback: If not connected via Socket.IO, add message locally
             if (!isConnected) {
-                setMessages([
-                    ...messages,
+                setMessages((prev) => [
+                    ...prev,
                     {
                         id: `msg-${Date.now()}`,
                         roomId: room.id,
                         senderId: user.uid,
                         senderName: user.profile?.name || 'User',
                         senderRole: userRole,
-                        content: newMessage.trim(),
+                        content: messageContent,
                         type: 'text',
                         createdAt: new Date(),
                     },
                 ]);
             }
-            setNewMessage('');
         } finally {
             setSending(false);
         }
@@ -213,12 +214,12 @@ export default function ProjectRoomPage() {
                 (progress) => setUploadProgress(progress)
             );
 
-            // Send file message via Socket
+            // Send file message via Socket.IO for real-time delivery
             if (isConnected) {
                 sendFileMessage(result.url, result.name);
             }
 
-            // Save to Firestore
+            // Save to Firestore for persistence
             await createRoomMessage({
                 roomId: room.id,
                 senderId: user.uid,
@@ -234,6 +235,24 @@ export default function ProjectRoomPage() {
             setUploadProgress(null);
         } catch (error) {
             console.error('Error uploading file:', error);
+            // Fallback for offline: add file message locally
+            if (!isConnected) {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: `msg-${Date.now()}`,
+                        roomId: room.id,
+                        senderId: user.uid,
+                        senderName: user.profile?.name || 'User',
+                        senderRole: userRole,
+                        content: '',
+                        type: 'file',
+                        attachmentUrl: URL.createObjectURL(selectedFile),
+                        attachmentName: selectedFile.name,
+                        createdAt: new Date(),
+                    },
+                ]);
+            }
             alert('Failed to upload file. Please try again.');
         } finally {
             setUploading(false);

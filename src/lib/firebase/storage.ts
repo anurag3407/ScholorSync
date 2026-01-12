@@ -25,7 +25,7 @@ export async function uploadChatFile(
     onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
     if (!isFirebaseConfigured) {
-        throw new Error('Firebase Storage is not configured');
+        throw new Error('Firebase Storage is not configured. Please check your environment variables.');
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -63,7 +63,13 @@ export async function uploadChatFile(
             (error) => {
                 console.error('Upload error:', error);
                 onProgress?.({ progress: 0, state: 'error' });
-                reject(error);
+
+                // Check for CORS error
+                if (error.message?.includes('CORS') || error.code === 'storage/unauthorized' || error.message?.includes('network')) {
+                    reject(new Error('File upload failed. CORS is not configured for Firebase Storage. Please configure CORS settings in Google Cloud Console.'));
+                } else {
+                    reject(error);
+                }
             },
             async () => {
                 try {

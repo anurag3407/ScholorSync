@@ -35,9 +35,8 @@ export function RoleSelector({ onComplete }: RoleSelectorProps) {
         setLoading(true);
         setEmailError(null);
         try {
-            const profileData: { role: UserRole; companyName?: string; institutionalEmail?: string } = {
+            const profileData: { role: UserRole; companyName?: string } = {
                 role: selectedRole,
-                institutionalEmail: verificationEmail.trim(),
             };
             if (selectedRole === 'corporate' && companyName.trim()) {
                 profileData.companyName = companyName.trim();

@@ -1,14 +1,49 @@
 import nodemailer from 'nodemailer';
+import "dotenv/config"
+// Validate required environment variables
+const getEmailConfig = () => {
+    const host = process.env.EMAIL_HOST;
+    const port = process.env.EMAIL_PORT;
+    const user = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASS;
+
+    // Log config for debugging (without password)
+    console.log('[Email Config] HOST:', host, 'PORT:', port, 'USER:', user ? `${user.substring(0, 5)}...` : 'undefined');
+
+    if (!host || !user || !pass) {
+        throw new Error(
+            `Missing email configuration. Please check your .env file:\n` +
+            `EMAIL_HOST: ${host ? '✓' : '✗ MISSING'}\n` +
+            `EMAIL_PORT: ${port || '587 (default)'}\n` +
+            `EMAIL_USER: ${user ? '✓' : '✗ MISSING'}\n` +
+            `EMAIL_PASS: ${pass ? '✓' : '✗ MISSING'}`
+        );
+    }
+
+    return {
+        host,
+        port: parseInt(port || '587', 10),
+        secure: port === '465',
+        user,
+        pass,
+    };
+};
 
 // Create transporter using environment variables
 const createTransporter = () => {
+    const config = getEmailConfig();
+
     return nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT || '587', 10),
-        secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: config.user,
+            pass: config.pass,
+        },
+        tls: {
+            // Bypass self-signed certificate issues
+            rejectUnauthorized: false,
         },
     });
 };
@@ -20,9 +55,6 @@ interface VerificationEmailParams {
     verificationToken: string;
 }
 
-/**
- * Send verification email to user after role selection
- */
 export const sendVerificationEmail = async ({
     email,
     userId,
@@ -33,7 +65,7 @@ export const sendVerificationEmail = async ({
         const transporter = createTransporter();
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}&userId=${userId}`;
+        const verificationUrl = `${baseUrl}/api/email/verify?token=${verificationToken}&userId=${userId}`;
 
         const roleLabel = role === 'student' ? 'Student' : 'Corporate Partner';
 

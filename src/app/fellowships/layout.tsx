@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserFellowshipProfile } from '@/lib/firebase/fellowships';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -92,20 +93,59 @@ export default function FellowshipsLayout({
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [userRole, setUserRole] = useState<UserRole | null>(null);
+    const [isVerified, setIsVerified] = useState(false);
+    const [roleLoading, setRoleLoading] = useState(true);
 
+    // Check if we're on the onboarding page
+    const isOnboardingPage = pathname === '/fellowships/onboarding';
+
+    // Redirect to login if not authenticated
     useEffect(() => {
         if (!loading && !user) {
             router.push('/auth/login?redirect=/fellowships');
         }
     }, [user, loading, router]);
 
+    // Load fellowship profile from Firestore
     useEffect(() => {
-        // Get role from user profile or default to student
-        const role = (user as unknown as { role?: UserRole })?.role || 'student';
-        setUserRole(role);
-    }, [user]);
+        const loadFellowshipProfile = async () => {
+            if (!user?.uid) {
+                setRoleLoading(false);
+                return;
+            }
 
-    if (loading) {
+            // Don't check if we're on onboarding page - let user complete it
+            if (isOnboardingPage) {
+                setRoleLoading(false);
+                return;
+            }
+
+            try {
+                console.log('[Fellowship] Loading profile for user:', user.uid);
+                const profile = await getUserFellowshipProfile(user.uid);
+                console.log('[Fellowship] Profile loaded:', profile);
+
+                if (profile?.role) {
+                    setUserRole(profile.role);
+                    setIsVerified(profile.isVerified || false);
+                } else {
+                    // No role set - redirect to onboarding
+                    console.log('[Fellowship] No role found, redirecting to onboarding');
+                    router.push('/fellowships/onboarding');
+                    return; // Don't set roleLoading to false yet
+                }
+            } catch (error) {
+                console.error('Error loading fellowship profile:', error);
+            }
+            setRoleLoading(false);
+        };
+
+        if (user?.uid && !loading) {
+            loadFellowshipProfile();
+        }
+    }, [user?.uid, loading, isOnboardingPage, router]);
+
+    if (loading || roleLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-4">
@@ -130,7 +170,7 @@ export default function FellowshipsLayout({
         }
     );
 
-    const isVerified = (user as unknown as { isVerified?: boolean })?.isVerified;
+
 
     const handleLogout = async () => {
         try {

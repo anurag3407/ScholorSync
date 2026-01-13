@@ -22,22 +22,36 @@ export function RoleSelector({ onComplete }: RoleSelectorProps) {
     const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
     const [companyName, setCompanyName] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleContinue = async () => {
         if (!selectedRole || !user?.uid) return;
 
         setLoading(true);
+        setError(null);
+
         try {
-            await updateUserFellowshipProfile(user.uid, {
+            console.log('[RoleSelector] Saving role:', selectedRole, 'for user:', user.uid);
+
+            // Build profile data without undefined values (Firebase doesn't allow undefined)
+            const profileData: { role: typeof selectedRole; companyName?: string } = {
                 role: selectedRole,
-                companyName: selectedRole === 'corporate' ? companyName : undefined,
-            });
+            };
+            if (selectedRole === 'corporate' && companyName.trim()) {
+                profileData.companyName = companyName.trim();
+            }
+
+            await updateUserFellowshipProfile(user.uid, profileData);
+            console.log('[RoleSelector] Role saved successfully');
+
+            // Wait a moment for Firestore to propagate
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             await refreshUser();
             onComplete?.();
-        } catch (error) {
-            console.error('Error setting role:', error);
-            // For demo, proceed anyway
-            onComplete?.();
+        } catch (err) {
+            console.error('Error setting role:', err);
+            setError('Failed to save your role. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -145,6 +159,13 @@ export function RoleSelector({ onComplete }: RoleSelectorProps) {
                         />
                     </CardContent>
                 </Card>
+            )}
+
+            {/* Error Message */}
+            {error && (
+                <div className="rounded-lg bg-red-100 border border-red-300 p-3 text-sm text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-300">
+                    {error}
+                </div>
             )}
 
             {/* Continue Button */}

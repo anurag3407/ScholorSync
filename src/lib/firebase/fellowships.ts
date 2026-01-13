@@ -327,17 +327,46 @@ export const getRoomMessages = async (roomId: string, limitCount = 100): Promise
 // USER VERIFICATION OPERATIONS
 // ============================================
 
+export const getUserFellowshipProfile = async (
+    userId: string
+): Promise<FellowshipUserProfile | null> => {
+    if (!isFirebaseConfigured) return null;
+    const usersCollection = getCollectionRef('users');
+    const userRef = doc(usersCollection, userId);
+    try {
+        const docSnapshot = await getDoc(userRef);
+        if (!docSnapshot.exists()) return null;
+        const data = docSnapshot.data();
+        return {
+            role: data.role,
+            isVerified: data.isVerified,
+            verifiedAt: data.verifiedAt?.toDate?.() || data.verifiedAt,
+            companyName: data.companyName,
+            companyDescription: data.companyDescription,
+        };
+    } catch (error) {
+        console.error('Error getting fellowship profile:', error);
+        return null;
+    }
+};
+
 export const updateUserFellowshipProfile = async (
     userId: string,
     data: FellowshipUserProfile
 ): Promise<void> => {
+    if (!isFirebaseConfigured) {
+        console.error('Firebase not configured');
+        return;
+    }
     const usersCollection = getCollectionRef('users');
     const userRef = doc(usersCollection, userId);
     const updateData: Record<string, unknown> = { ...data };
     if (data.verifiedAt) {
         updateData.verifiedAt = Timestamp.fromDate(data.verifiedAt);
     }
-    await updateDoc(userRef, updateData);
+    // Use setDoc with merge to create document if it doesn't exist
+    await setDoc(userRef, updateData, { merge: true });
+    console.log('[Fellowship] Role saved successfully:', data.role);
 };
 
 export const verifyStudentByEmail = async (

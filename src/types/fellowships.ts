@@ -77,6 +77,9 @@ export interface FellowshipUserProfile {
     verifiedAt?: Date;
     companyName?: string;
     companyDescription?: string;
+    razorpayLinkedAccountId?: string;
+    bankAccountNumber?: string;
+    ifscCode?: string;
 }
 
 // Category metadata for UI

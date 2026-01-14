@@ -146,6 +146,24 @@ export default function ProjectRoomPage() {
         }
     };
 
+    const loadRazorpay = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            if ((window as any).Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+
+            document.body.appendChild(script);
+        });
+    };
+
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !room || !user) return;
 
@@ -302,31 +320,60 @@ export default function ProjectRoomPage() {
     const handleReleaseFunds = async () => {
         if (!room) return;
 
-        setReleasing(true);
         try {
-            await updateEscrowStatus(room.id, 'released');
-            setRoom({ ...room, escrowStatus: 'released', status: 'completed' });
-            // Add milestone message
-            setMessages([
-                ...messages,
-                {
-                    id: `msg-${Date.now()}`,
+            setReleasing(true);
+
+            // ✅ LOAD RAZORPAY SCRIPT FIRST
+            const loaded = await loadRazorpay();
+            if (!loaded) {
+                toast.error('Razorpay failed to load');
+                return;
+            }
+
+            // 1️⃣ Create order
+            const res = await fetch('/api/payments/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     roomId: room.id,
-                    senderId: 'system',
-                    senderName: 'System',
-                    senderRole: 'corporate',
-                    content: `🎉 Funds have been released! ₹${room.escrowAmount.toLocaleString('en-IN')} transferred to ${room.studentName}.`,
-                    type: 'milestone',
-                    createdAt: new Date(),
+                    amount: room.escrowAmount,
+                }),
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error('Order creation failed');
+
+            // 2️⃣ Open Razorpay checkout
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+                amount: data.amount,
+                currency: data.currency,
+                order_id: data.orderId,
+                name: 'Scholarship Payment',
+                description: room.challengeTitle,
+
+                handler: async function (response: any) {
+                    await fetch('/api/payments/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...response,
+                            roomId: room.id,
+                        }),
+                    });
+
+                    toast.success('Scholarship released successfully 🎉');
+                    setRoom({ ...room, escrowStatus: 'released', status: 'completed' });
                 },
-            ]);
-        } catch (error) {
-            console.error('Error releasing funds:', error);
-            // For demo, update locally
-            setRoom({ ...room, escrowStatus: 'released', status: 'completed' });
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            console.error(err);
+            toast.error('Payment failed');
         } finally {
             setReleasing(false);
-            setShowReleaseModal(false);
         }
     };
 

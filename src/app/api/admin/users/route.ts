@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
+import {
+  collection,
+  getDocs,
+  doc,
   updateDoc,
   deleteDoc,
   Timestamp,
@@ -10,9 +10,9 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 function verifyAdmin(email: string, password: string): boolean {
   return email === ADMIN_EMAIL && password === ADMIN_PASSWORD;
@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
     if (userId) {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
-      
+
       if (!userSnap.exists()) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
       const userData = userSnap.data();
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         data: {
           id: userSnap.id,
           ...userData,
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Get all users
     const usersRef = collection(db, 'users');
     const usersSnapshot = await getDocs(usersRef);
-    
+
     const users = usersSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -74,8 +74,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: users,
       total: users.length
     });
@@ -120,8 +120,8 @@ export async function PUT(request: NextRequest) {
       updatedAt: Timestamp.now(),
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'User updated successfully'
     });
   } catch (error) {
@@ -169,8 +169,8 @@ export async function DELETE(request: NextRequest) {
     // Delete user document
     await deleteDoc(userRef);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'User deleted successfully'
     });
   } catch (error) {

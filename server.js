@@ -1,3 +1,9 @@
+// Load .env first, then .env.local (which overrides)
+require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
+console.log('ADMIN_EMAIL:', process.env.ADMIN_EMAIL ? 'SET' : 'NOT SET');
+console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? 'SET' : 'NOT SET');
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');

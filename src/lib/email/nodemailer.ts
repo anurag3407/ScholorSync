@@ -1,13 +1,12 @@
 import nodemailer from 'nodemailer';
 import "dotenv/config"
-// Validate required environment variables
+
 const getEmailConfig = () => {
     const host = process.env.EMAIL_HOST;
     const port = process.env.EMAIL_PORT;
     const user = process.env.EMAIL_USER;
     const pass = process.env.EMAIL_PASS;
 
-    // Log config for debugging (without password)
     console.log('[Email Config] HOST:', host, 'PORT:', port, 'USER:', user ? `${user.substring(0, 5)}...` : 'undefined');
 
     if (!host || !user || !pass) {
@@ -29,7 +28,6 @@ const getEmailConfig = () => {
     };
 };
 
-// Create transporter using environment variables
 const createTransporter = () => {
     const config = getEmailConfig();
 
@@ -42,7 +40,6 @@ const createTransporter = () => {
             pass: config.pass,
         },
         tls: {
-            // Bypass self-signed certificate issues
             rejectUnauthorized: false,
         },
     });

@@ -23,14 +23,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate verification token
         const verificationToken = uuidv4();
 
-        // Token expires in 24 hours
         const tokenExpiry = new Date();
         tokenExpiry.setHours(tokenExpiry.getHours() + 24);
 
-        // Store token in user document
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
             verificationToken,
@@ -38,7 +35,6 @@ export async function POST(request: NextRequest) {
             pendingVerificationRole: role,
         });
 
-        // Send verification email
         const result = await sendVerificationEmail({
             email,
             userId,

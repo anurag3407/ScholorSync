@@ -36,6 +36,7 @@ interface ScholarshipCardProps {
   onSave?: (id: string) => void;
   onUnsave?: (id: string) => void;
   onExplain?: (scholarship: ScholarshipMatch) => Promise<EligibilityExplanation>;
+  onApply?: (scholarship: ScholarshipMatch) => void; // For in-app applications (admin scholarships)
 }
 
 export function ScholarshipCard({
@@ -44,6 +45,7 @@ export function ScholarshipCard({
   onSave,
   onUnsave,
   onExplain,
+  onApply,
 }: ScholarshipCardProps) {
   const [isExplaining, setIsExplaining] = useState(false);
   const [explanation, setExplanation] = useState<EligibilityExplanation | null>(null);
@@ -194,15 +196,13 @@ export function ScholarshipCard({
             ) : explanation ? (
               <div className="space-y-4">
                 <div
-                  className={`p-4 rounded-lg ${
-                    explanation.eligible ? 'bg-green-50' : 'bg-red-50'
-                  }`}
+                  className={`p-4 rounded-lg ${explanation.eligible ? 'bg-green-50' : 'bg-red-50'
+                    }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Target
-                      className={`h-5 w-5 ${
-                        explanation.eligible ? 'text-green-600' : 'text-red-600'
-                      }`}
+                      className={`h-5 w-5 ${explanation.eligible ? 'text-green-600' : 'text-red-600'
+                        }`}
                     />
                     <span className="font-semibold">
                       {explanation.eligible ? 'You qualify!' : 'Not fully eligible'}
@@ -290,14 +290,25 @@ export function ScholarshipCard({
           )}
         </Button>
 
-        <Button 
-          size="sm" 
-          className="flex-1"
-          onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
-        >
-          Apply Now
-          <ExternalLink className="h-4 w-4 ml-1" />
-        </Button>
+        {/* Show in-app Apply for admin scholarships (no applicationUrl) or external link for scraped */}
+        {scholarship.applicationUrl ? (
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+          >
+            Apply Now
+            <ExternalLink className="h-4 w-4 ml-1" />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="flex-1 bg-green-600 hover:bg-green-700"
+            onClick={() => onApply?.(scholarship)}
+          >
+            Apply Here
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

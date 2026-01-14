@@ -10,9 +10,9 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 function verifyAdmin(email: string, password: string): boolean {
   return email === ADMIN_EMAIL && password === ADMIN_PASSWORD;

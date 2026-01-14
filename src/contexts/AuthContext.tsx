@@ -35,10 +35,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
-
 // Helper to parse Firebase auth errors into user-friendly messages
 function getAuthErrorMessage(error: AuthError): string {
   const errorCode = error.code;
@@ -170,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
     }
-    
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setFirebaseUser(firebaseUser);
       if (firebaseUser) {
@@ -186,41 +182,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
-    // Check for admin login
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      setIsAdmin(true);
-      setAdminCredentials({ email, password });
-      setUser({
-        uid: 'admin',
-        email: ADMIN_EMAIL,
-        profile: {
-          name: 'Administrator',
-          category: 'General',
-          income: 0,
-          percentage: 0,
-          branch: '',
-          year: 1,
-          state: '',
-          college: '',
-          gender: 'Male',
-          achievements: [],
-        },
-        documents: {},
-        savedScholarships: [],
-        appliedScholarships: [],
-        notifications: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    // Check for admin login via API
+    try {
+      const adminResponse = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      setLoading(false);
-      return;
+      const adminResult = await adminResponse.json();
+
+      if (adminResult.success && adminResult.data?.isAdmin) {
+        setIsAdmin(true);
+        setAdminCredentials({ email, password });
+        setUser({
+          uid: 'admin',
+          email: email,
+          profile: {
+            name: 'Administrator',
+            category: 'General',
+            income: 0,
+            percentage: 0,
+            branch: '',
+            year: 1,
+            state: '',
+            college: '',
+            gender: 'Male',
+            achievements: [],
+          },
+          documents: {},
+          savedScholarships: [],
+          appliedScholarships: [],
+          notifications: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      // Not an admin login attempt, continue with regular Firebase auth
+      console.log('Not an admin login, trying Firebase auth');
     }
 
     if (!isFirebaseConfigured) {
       setError('Firebase is not configured. Please check your environment variables.');
       return;
     }
-    
+
     setError(null);
     setIsAdmin(false);
     setAdminCredentials(null);
@@ -228,8 +236,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await fetchUserData(result.user);
     } catch (err) {
-      const errorMessage = err instanceof Error && 'code' in err 
-        ? getAuthErrorMessage(err as AuthError) 
+      const errorMessage = err instanceof Error && 'code' in err
+        ? getAuthErrorMessage(err as AuthError)
         : 'Failed to sign in';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -242,11 +250,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError('Firebase is not configured. Please check your environment variables.');
       return;
     }
-    
+
     setError(null);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Create user document in Firestore
       await createUser(result.user.uid, {
         uid: result.user.uid,
@@ -268,11 +276,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         appliedScholarships: [],
         notifications: true,
       });
-      
+
       await fetchUserData(result.user);
     } catch (err) {
-      const errorMessage = err instanceof Error && 'code' in err 
-        ? getAuthErrorMessage(err as AuthError) 
+      const errorMessage = err instanceof Error && 'code' in err
+        ? getAuthErrorMessage(err as AuthError)
         : 'Failed to create account';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -285,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError('Firebase is not configured. Please check your environment variables.');
       return;
     }
-    
+
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
@@ -293,12 +301,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         prompt: 'select_account'
       });
       const result = await signInWithPopup(auth, provider);
-      
+
       // Try to check if user exists and create if not
       // Handle permission errors gracefully
       try {
         const existingUser = await getUser(result.user.uid);
-        
+
         if (!existingUser) {
           // Create new user document
           await createUser(result.user.uid, {
@@ -322,7 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             notifications: true,
           });
         }
-        
+
         await fetchUserData(result.user);
       } catch (firestoreError) {
         // Firestore error (likely permissions) - still let user sign in
@@ -332,8 +340,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchUserData(result.user, false);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error && 'code' in err 
-        ? getAuthErrorMessage(err as AuthError) 
+      const errorMessage = err instanceof Error && 'code' in err
+        ? getAuthErrorMessage(err as AuthError)
         : 'Failed to sign in with Google';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -367,13 +375,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError('Firebase is not configured. Please check your environment variables.');
       return;
     }
-    
+
     setError(null);
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (err) {
-      const errorMessage = err instanceof Error && 'code' in err 
-        ? getAuthErrorMessage(err as AuthError) 
+      const errorMessage = err instanceof Error && 'code' in err
+        ? getAuthErrorMessage(err as AuthError)
         : 'Failed to send reset email';
       setError(errorMessage);
       throw new Error(errorMessage);

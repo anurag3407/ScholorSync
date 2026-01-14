@@ -7,12 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Search, 
-  Sparkles, 
-  AlertCircle, 
-  Loader2, 
-  GraduationCap, 
+import {
+  Search,
+  Sparkles,
+  AlertCircle,
+  Loader2,
+  GraduationCap,
   ArrowRight,
   RefreshCw
 } from 'lucide-react';
@@ -40,14 +40,14 @@ export default function ScholarshipsPage() {
   useEffect(() => {
     async function loadData() {
       if (!user) return;
-      
+
       try {
         const response = await fetch(`/api/profile?uid=${user.uid}`);
         if (response.ok) {
           const data = await response.json();
           setProfileComplete(data.profile?.isComplete || false);
           setSavedIds(data.savedScholarships?.map((s: { id: string }) => s.id) || []);
-          
+
           // Add demo scholarships for demonstration
           const demoScholarships: ScholarshipMatch[] = [
             {
@@ -224,7 +224,7 @@ export default function ScholarshipsPage() {
 
   const findScholarships = async () => {
     if (!user || !profileComplete) return;
-    
+
     setMatching(true);
     try {
       const response = await fetch('/api/scholarships/match', {
@@ -236,7 +236,7 @@ export default function ScholarshipsPage() {
       if (response.ok) {
         const data = await response.json();
         const matched = data.scholarships?.filter((s: ScholarshipMatch) => s.matchPercentage >= 70) || [];
-        const nearMiss = data.scholarships?.filter((s: ScholarshipMatch) => 
+        const nearMiss = data.scholarships?.filter((s: ScholarshipMatch) =>
           s.matchPercentage >= 40 && s.matchPercentage < 70
         ) || [];
         setMatchedScholarships(matched);
@@ -293,8 +293,8 @@ export default function ScholarshipsPage() {
           </p>
         </div>
         {profileComplete && (
-          <Button 
-            onClick={findScholarships} 
+          <Button
+            onClick={findScholarships}
             disabled={matching}
             className="gap-2"
           >
@@ -365,7 +365,7 @@ export default function ScholarshipsPage() {
                   <GraduationCap className="h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
                   <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300">No matched scholarships yet</h4>
                   <p className="text-sm text-slate-500 mt-2 max-w-md">
-                    {profileComplete 
+                    {profileComplete
                       ? "Click 'Find Scholarships' to discover scholarships matching your profile"
                       : "Complete your profile to find matching scholarships"
                     }
@@ -416,8 +416,8 @@ export default function ScholarshipsPage() {
                         </span>
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => {
                             alert(`${scholarship.name}\n\nProvider: ${scholarship.provider}\nAmount: ₹${scholarship.amount.min.toLocaleString()} - ₹${scholarship.amount.max.toLocaleString()}\nDeadline: ${scholarship.deadline}\nEligibility: ${scholarship.eligibilityText}\n\nDocuments Required:\n${scholarship.documentsRequired.join('\n')}`);
@@ -425,12 +425,43 @@ export default function ScholarshipsPage() {
                         >
                           View Details
                         </Button>
-                        <Button 
-                          size="sm"
-                          onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
-                        >
-                          Apply
-                        </Button>
+                        {scholarship.applicationUrl ? (
+                          <Button
+                            size="sm"
+                            onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+                          >
+                            Apply
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={async () => {
+                              if (!user) return;
+                              try {
+                                const res = await fetch('/api/scholarships/apply', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    uid: user.uid,
+                                    scholarshipId: scholarship.id,
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  alert('Application submitted successfully!');
+                                } else {
+                                  alert(data.error || 'Failed to submit application');
+                                }
+                              } catch (error) {
+                                console.error('Error applying:', error);
+                                alert('Failed to submit application');
+                              }
+                            }}
+                          >
+                            Apply Here
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -454,7 +485,7 @@ export default function ScholarshipsPage() {
                   <AlertCircle className="h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
                   <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300">No near-miss scholarships</h4>
                   <p className="text-sm text-slate-500 mt-2 max-w-md">
-                    {profileComplete 
+                    {profileComplete
                       ? "Search for scholarships to see which ones you're close to qualifying for"
                       : "Complete your profile to find near-miss scholarships"
                     }
@@ -489,11 +520,13 @@ export default function ScholarshipsPage() {
                           </ul>
                         </div>
                       )}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="mt-3"
-                        onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+                        onClick={() => {
+                          alert(`${scholarship.name}\n\nProvider: ${scholarship.provider}\nAmount: ₹${scholarship.amount.min.toLocaleString()} - ₹${scholarship.amount.max.toLocaleString()}\nMatch: ${scholarship.matchPercentage}%\nEligibility: ${scholarship.eligibilityText}`);
+                        }}
                       >
                         View Details
                       </Button>

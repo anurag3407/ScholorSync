@@ -6,18 +6,15 @@ let app: App;
 let adminDb: Firestore;
 let adminAuth: Auth;
 
-// Initialize Firebase Admin
 function initializeFirebaseAdmin() {
   if (getApps().length === 0) {
-    // For development, use a service account or emulator
-    // In production, use environment variables
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY 
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
       ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
       : {
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        };
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      };
 
     app = initializeApp({
       credential: cert(serviceAccount),
@@ -33,7 +30,6 @@ function initializeFirebaseAdmin() {
   return { app, adminDb, adminAuth };
 }
 
-// Lazy initialization
 export const getAdminDb = (): Firestore => {
   if (!adminDb) {
     initializeFirebaseAdmin();

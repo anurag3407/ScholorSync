@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
   deleteDoc,
   Timestamp,
   getDoc,
@@ -13,9 +13,9 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 function verifyAdmin(email: string, password: string): boolean {
   return email === ADMIN_EMAIL && password === ADMIN_PASSWORD;
@@ -55,14 +55,14 @@ export async function GET(request: NextRequest) {
     }));
 
     // Sort by date (newest first)
-    notifications.sort((a, b) => 
+    notifications.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: notifications,
-      total: notifications.length 
+      total: notifications.length
     });
   } catch (error) {
     console.error('Admin Notifications GET Error:', error);
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     const targetUserIds = userIds || [];
-    
+
     // If no specific users, send to all users
     let recipients = targetUserIds;
     if (recipients.length === 0) {
@@ -118,8 +118,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Notification sent to ${sentCount} user(s)`,
       sentCount
     });
@@ -158,15 +158,15 @@ export async function DELETE(request: NextRequest) {
       const notificationsRef = collection(db, 'notifications');
       const q = query(notificationsRef, where('userId', '==', userId));
       const snapshot = await getDocs(q);
-      
+
       let deletedCount = 0;
       for (const docSnap of snapshot.docs) {
         await deleteDoc(doc(db, 'notifications', docSnap.id));
         deletedCount++;
       }
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: `Deleted ${deletedCount} notifications for user`
       });
     }

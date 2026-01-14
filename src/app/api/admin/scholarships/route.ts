@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
-  updateDoc, 
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  updateDoc,
   deleteDoc,
-  query, 
+  query,
   orderBy,
   where,
   Timestamp,
@@ -14,15 +14,13 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 function verifyAdmin(email: string, password: string): boolean {
   return email === ADMIN_EMAIL && password === ADMIN_PASSWORD;
 }
 
-// GET - Fetch all scholarships for admin
 export async function GET(request: NextRequest) {
   try {
     if (!isFirebaseConfigured || !db) {
@@ -45,13 +43,13 @@ export async function GET(request: NextRequest) {
     if (id) {
       const scholarshipRef = doc(db, 'scholarships', id);
       const scholarshipSnap = await getDoc(scholarshipRef);
-      
+
       if (!scholarshipSnap.exists()) {
         return NextResponse.json({ error: 'Scholarship not found' }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         data: { id: scholarshipSnap.id, ...scholarshipSnap.data() }
       });
     }
@@ -59,7 +57,7 @@ export async function GET(request: NextRequest) {
     // Get scholarships by type or all
     const scholarshipsRef = collection(db, 'scholarships');
     let q;
-    
+
     if (adminOnly) {
       q = query(scholarshipsRef, where('createdByAdmin', '==', true), orderBy('createdAt', 'desc'));
     } else if (type) {
@@ -104,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     const scholarshipsRef = collection(db, 'scholarships');
     const newScholarshipRef = doc(scholarshipsRef);
-    
+
     const scholarship = {
       id: newScholarshipRef.id,
       name: scholarshipData.name,
@@ -126,9 +124,9 @@ export async function POST(request: NextRequest) {
       eligibilityText: scholarshipData.eligibilityText || '',
       description: scholarshipData.description || '',
       deadline: scholarshipData.deadline || '',
-      applicationUrl: scholarshipData.applicationUrl || '',
+      applicationUrl: '', // Empty for admin scholarships - users apply through the app
       documentsRequired: scholarshipData.documentsRequired || [],
-      sourceUrl: scholarshipData.sourceUrl || '',
+      sourceUrl: '', // No external source for admin-created scholarships
       createdByAdmin: true,
       adminPriority: true,
       scrapedAt: Timestamp.now(),
@@ -137,8 +135,8 @@ export async function POST(request: NextRequest) {
 
     await setDoc(newScholarshipRef, scholarship);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Scholarship created successfully',
       data: scholarship
     }, { status: 201 });
@@ -178,8 +176,8 @@ export async function PUT(request: NextRequest) {
       updatedAt: Timestamp.now(),
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Scholarship updated successfully'
     });
   } catch (error) {
@@ -217,8 +215,8 @@ export async function DELETE(request: NextRequest) {
 
     await deleteDoc(scholarshipRef);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Scholarship deleted successfully'
     });
   } catch (error) {

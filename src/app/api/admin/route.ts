@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
-  updateDoc, 
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  updateDoc,
   deleteDoc,
-  query, 
+  query,
   orderBy,
   Timestamp,
   getDoc,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Helper to verify admin
 export function verifyAdmin(email: string, password: string): boolean {
@@ -42,19 +42,19 @@ export async function GET(request: NextRequest) {
       // Fetch all users and their applications
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
-      
+
       const allApplications: any[] = [];
-      
+
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         const appliedScholarships = userData.appliedScholarships || [];
-        
+
         for (const app of appliedScholarships) {
           // Get scholarship details
           const scholarshipRef = doc(db, 'scholarships', app.id);
           const scholarshipSnap = await getDoc(scholarshipRef);
           const scholarshipData = scholarshipSnap.exists() ? scholarshipSnap.data() : null;
-          
+
           allApplications.push({
             id: `${userDoc.id}_${app.id}`,
             odoo: userDoc.id,
@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: allApplications.sort((a, b) => 
+      return NextResponse.json({
+        success: true,
+        data: allApplications.sort((a, b) =>
           new Date(b.appliedOn).getTime() - new Date(a.appliedOn).getTime()
         )
       });
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
       // Fetch all users
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
-      
+
       const users = usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       // Fetch statistics
       const usersRef = collection(db, 'users');
       const scholarshipsRef = collection(db, 'scholarships');
-      
+
       const [usersSnapshot, scholarshipsSnapshot] = await Promise.all([
         getDocs(usersRef),
         getDocs(scholarshipsRef),
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     const scholarshipsRef = collection(db, 'scholarships');
     const newScholarshipRef = doc(scholarshipsRef);
-    
+
     const scholarshipData = {
       ...scholarship,
       id: newScholarshipRef.id,
@@ -182,8 +182,8 @@ export async function POST(request: NextRequest) {
 
     await setDoc(newScholarshipRef, scholarshipData);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: { id: newScholarshipRef.id, ...scholarshipData }
     });
   } catch (error) {
@@ -208,21 +208,21 @@ export async function PUT(request: NextRequest) {
 
     if (type === 'application-status') {
       const { userId, scholarshipId, newStatus } = data;
-      
+
       if (!userId || !scholarshipId || !newStatus) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
       }
 
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
-      
+
       if (!userSnap.exists()) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
       const userData = userSnap.data();
       const appliedScholarships = userData.appliedScholarships || [];
-      
+
       const updatedApplications = appliedScholarships.map((app: any) => {
         if (app.id === scholarshipId) {
           return {
@@ -257,7 +257,7 @@ export async function PUT(request: NextRequest) {
 
     if (type === 'scholarship') {
       const { scholarshipId, updates } = data;
-      
+
       if (!scholarshipId) {
         return NextResponse.json({ error: 'Scholarship ID required' }, { status: 400 });
       }

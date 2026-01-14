@@ -16,23 +16,19 @@ export interface UploadResult {
     type: string;
 }
 
-/**
- * Upload a file to Firebase Storage for chat attachments
- */
 export async function uploadChatFile(
     roomId: string,
     file: File,
     onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
     if (!isFirebaseConfigured) {
-        throw new Error('Firebase Storage is not configured. Please check your environment variables.');
+        throw new Error('Firebase Storage is not configured');
     }
 
     if (file.size > MAX_FILE_SIZE) {
         throw new Error(`File size exceeds the maximum limit of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
     }
 
-    // Create a unique file path
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `chat-files/${roomId}/${timestamp}-${safeName}`;
@@ -63,13 +59,7 @@ export async function uploadChatFile(
             (error) => {
                 console.error('Upload error:', error);
                 onProgress?.({ progress: 0, state: 'error' });
-
-                // Check for CORS error
-                if (error.message?.includes('CORS') || error.code === 'storage/unauthorized' || error.message?.includes('network')) {
-                    reject(new Error('File upload failed. CORS is not configured for Firebase Storage. Please configure CORS settings in Google Cloud Console.'));
-                } else {
-                    reject(error);
-                }
+                reject(error);
             },
             async () => {
                 try {
@@ -90,9 +80,7 @@ export async function uploadChatFile(
     });
 }
 
-/**
- * Get download URL for a chat file
- */
+
 export async function getChatFileUrl(path: string): Promise<string> {
     if (!isFirebaseConfigured) {
         throw new Error('Firebase Storage is not configured');
@@ -102,9 +90,6 @@ export async function getChatFileUrl(path: string): Promise<string> {
     return getDownloadURL(storageRef);
 }
 
-/**
- * Delete a chat file from storage
- */
 export async function deleteChatFile(path: string): Promise<void> {
     if (!isFirebaseConfigured) {
         throw new Error('Firebase Storage is not configured');
@@ -114,24 +99,18 @@ export async function deleteChatFile(path: string): Promise<void> {
     await deleteObject(storageRef);
 }
 
-/**
- * Get file extension from name
- */
+
 export function getFileExtension(filename: string): string {
     return filename.split('.').pop()?.toLowerCase() || '';
 }
 
-/**
- * Check if file is an image
- */
+
 export function isImageFile(filename: string): boolean {
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
     return imageExtensions.includes(getFileExtension(filename));
 }
 
-/**
- * Get human readable file size
- */
+
 export function formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;

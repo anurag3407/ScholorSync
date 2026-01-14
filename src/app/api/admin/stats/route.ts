@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { collection, getDocs, query, where, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase/config';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-const ADMIN_PASSWORD = 'admin123';
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 function verifyAdmin(email: string, password: string): boolean {
   return email === ADMIN_EMAIL && password === ADMIN_PASSWORD;
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     usersSnapshot.docs.forEach(doc => {
       const data = doc.data();
       const appliedScholarships = data.appliedScholarships || [];
-      
+
       totalApplications += appliedScholarships.length;
       totalSavedScholarships += (data.savedScholarships || []).length;
       totalDocuments += Object.keys(data.documents || {}).length;
@@ -86,9 +86,9 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     scholarshipsSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      
+
       if (data.createdByAdmin) adminScholarships++;
-      
+
       switch (data.type) {
         case 'government': governmentScholarships++; break;
         case 'private': privateScholarships++; break;
@@ -150,8 +150,8 @@ export async function GET(request: NextRequest) {
           approved: approvedCount,
           rejected: rejectedCount,
           byMonth: applicationsByMonth,
-          approvalRate: totalApplications > 0 
-            ? ((approvedCount / totalApplications) * 100).toFixed(2) 
+          approvalRate: totalApplications > 0
+            ? ((approvedCount / totalApplications) * 100).toFixed(2)
             : '0',
         },
         notifications: {

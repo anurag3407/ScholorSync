@@ -11,15 +11,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin123@gmail.com';
-
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, isAdmin } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,13 +26,12 @@ export function LoginForm() {
 
     try {
       await signIn(email, password);
-      // Redirect admin to admin panel, regular users to dashboard
-      if (email === ADMIN_EMAIL) {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
+      router.push('/dashboard');
     } catch (err) {
+      if (err instanceof Error && err.message.includes('admin')) {
+        router.push('/admin');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
       setIsLoading(false);

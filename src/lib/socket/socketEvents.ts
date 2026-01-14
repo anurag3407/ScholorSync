@@ -1,40 +1,27 @@
-// Socket.IO Event Types and Payloads
-
 import type { RoomMessage, UserRole } from '@/types/fellowships';
 
-// Event names
 export const SOCKET_EVENTS = {
-    // Connection
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
 
-    // Room management
     JOIN_ROOM: 'join-room',
     LEAVE_ROOM: 'leave-room',
 
-    // Messaging
     SEND_MESSAGE: 'send-message',
     NEW_MESSAGE: 'new-message',
 
-    // Typing indicator
     TYPING_START: 'typing-start',
     TYPING_STOP: 'typing-stop',
     USER_TYPING: 'user-typing',
 
-    // File uploads
     FILE_UPLOADED: 'file-uploaded',
 
-    // User presence
     USER_JOINED: 'user-joined',
     USER_LEFT: 'user-left',
     ROOM_USERS: 'room-users',
-
-    // Global presence (for rooms list)
-    GET_ROOMS_PRESENCE: 'get-rooms-presence',
-    ROOMS_PRESENCE: 'rooms-presence',
 } as const;
 
-// Payload types
+
 export interface JoinRoomPayload {
     roomId: string;
     userId: string;
@@ -77,16 +64,5 @@ export interface RoomUsersPayload {
         id: string;
         name: string;
         role: UserRole;
-    }>;
-}
-
-export interface RoomsPresencePayload {
-    rooms: Record<string, {
-        userCount: number;
-        users: Array<{
-            id: string;
-            name: string;
-            role: UserRole;
-        }>;
     }>;
 }

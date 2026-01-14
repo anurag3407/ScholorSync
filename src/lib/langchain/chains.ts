@@ -2,13 +2,13 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { geminiModel, generateEmbedding } from './config';
-import type { 
-  UserProfile, 
-  Scholarship, 
-  EligibilityExplanation, 
-  WhyNotMeResult, 
+import type {
+  UserProfile,
+  Scholarship,
+  EligibilityExplanation,
+  WhyNotMeResult,
   SuccessPrediction,
-  FeeAnalysisResult 
+  FeeAnalysisResult
 } from '@/types';
 
 // Eligibility Explanation Chain
@@ -151,39 +151,68 @@ export const analyzeWhyNotMe = async (
   profile: UserProfile,
   scholarship: Scholarship
 ): Promise<Omit<WhyNotMeResult, 'scholarship'>> => {
-  const chain = RunnableSequence.from([
-    whyNotMePrompt,
-    geminiModel,
-    new StringOutputParser(),
-  ]);
-
-  const result = await chain.invoke({
-    category: profile.category || 'Not specified',
-    income: (profile.income || 0).toString(),
-    percentage: (profile.percentage || 0).toString(),
-    branch: profile.branch || 'Not specified',
-    year: (profile.year || 1).toString(),
-    state: profile.state || 'Not specified',
-    gender: profile.gender || 'Not specified',
-    achievements: (profile.achievements || []).join(', ') || 'None',
-    scholarshipName: scholarship.name || 'Unknown Scholarship',
-    eligibleCategories: (scholarship.eligibility?.categories || []).join(', ') || 'All',
-    incomeLimit: (scholarship.eligibility?.incomeLimit || 0).toString(),
-    minPercentage: (scholarship.eligibility?.minPercentage || 0).toString(),
-    eligibleStates: (scholarship.eligibility?.states || []).join(', ') || 'All',
-    eligibleBranches: (scholarship.eligibility?.branches || []).join(', ') || 'All',
-    genderReq: scholarship.eligibility?.gender || 'All',
-    yearMin: (scholarship.eligibility?.yearRange?.[0] || 1).toString(),
-    yearMax: (scholarship.eligibility?.yearRange?.[1] || 5).toString(),
-  });
+  // Check if API key is configured
+  if (!process.env.OPENROUTER_API_KEY) {
+    console.warn('OPENROUTER_API_KEY not configured, returning fallback response');
+    return {
+      gapPercentage: 50,
+      missingCriteria: [{
+        criterion: 'Configuration Required',
+        currentValue: 'N/A',
+        requiredValue: 'OPENROUTER_API_KEY must be set in .env',
+        actionable: false,
+        suggestion: 'Please configure the AI API key to enable analysis.'
+      }],
+    };
+  }
 
   try {
-    const cleanedResult = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleanedResult);
-  } catch {
+    const chain = RunnableSequence.from([
+      whyNotMePrompt,
+      geminiModel,
+      new StringOutputParser(),
+    ]);
+
+    const result = await chain.invoke({
+      category: profile.category || 'Not specified',
+      income: (profile.income || 0).toString(),
+      percentage: (profile.percentage || 0).toString(),
+      branch: profile.branch || 'Not specified',
+      year: (profile.year || 1).toString(),
+      state: profile.state || 'Not specified',
+      gender: profile.gender || 'Not specified',
+      achievements: (profile.achievements || []).join(', ') || 'None',
+      scholarshipName: scholarship.name || 'Unknown Scholarship',
+      eligibleCategories: (scholarship.eligibility?.categories || []).join(', ') || 'All',
+      incomeLimit: (scholarship.eligibility?.incomeLimit || 0).toString(),
+      minPercentage: (scholarship.eligibility?.minPercentage || 0).toString(),
+      eligibleStates: (scholarship.eligibility?.states || []).join(', ') || 'All',
+      eligibleBranches: (scholarship.eligibility?.branches || []).join(', ') || 'All',
+      genderReq: scholarship.eligibility?.gender || 'All',
+      yearMin: (scholarship.eligibility?.yearRange?.[0] || 1).toString(),
+      yearMax: (scholarship.eligibility?.yearRange?.[1] || 5).toString(),
+    });
+
+    try {
+      const cleanedResult = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cleanedResult);
+    } catch {
+      return {
+        gapPercentage: 0,
+        missingCriteria: [],
+      };
+    }
+  } catch (error) {
+    console.error('Error in analyzeWhyNotMe chain:', error);
     return {
       gapPercentage: 0,
-      missingCriteria: [],
+      missingCriteria: [{
+        criterion: 'Analysis Error',
+        currentValue: 'N/A',
+        requiredValue: 'N/A',
+        actionable: false,
+        suggestion: 'AI analysis temporarily unavailable. Please try again later.'
+      }],
     };
   }
 };
@@ -226,8 +255,8 @@ export const predictSuccess = async (
   ]);
 
   // Estimate competition level based on scholarship type
-  const competitionLevel = scholarship.type === 'government' ? 'high' : 
-                          scholarship.type === 'private' ? 'medium' : 'low';
+  const competitionLevel = scholarship.type === 'government' ? 'high' :
+    scholarship.type === 'private' ? 'medium' : 'low';
 
   const result = await chain.invoke({
     category: profile.category,
@@ -237,8 +266,8 @@ export const predictSuccess = async (
     scholarshipName: scholarship.name,
     type: scholarship.type,
     competitionLevel,
-    typicalApplicants: scholarship.type === 'government' ? '10000+' : 
-                       scholarship.type === 'private' ? '1000-5000' : '100-500',
+    typicalApplicants: scholarship.type === 'government' ? '10000+' :
+      scholarship.type === 'private' ? '1000-5000' : '100-500',
   });
 
   try {

@@ -138,7 +138,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<ProjectRoom | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<(ProjectRoom & { messages?: any[] }) | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
 
   // Form state for new scholarship
@@ -217,11 +217,31 @@ export default function AdminDashboard() {
         setApplications(applicationsData.data || []);
       }
 
-      // Fetch fellowship challenges
       try {
-        const challengeData = await getChallenges({}, 100);
-        setChallenges(challengeData.length > 0 ? challengeData : getMockChallenges());
-        setRooms(getMockRooms());
+        const fellowshipsRes = await fetch('/api/admin/fellowships', {
+          headers: {
+            'x-admin-email': adminCredentials.email,
+            'x-admin-password': adminCredentials.password,
+          },
+        });
+        const fellowshipsData = await fellowshipsRes.json();
+        if (fellowshipsData.success && fellowshipsData.data) {
+          setChallenges(fellowshipsData.data);
+        } else {
+          setChallenges(getMockChallenges());
+        }
+        const roomsRes = await fetch('/api/admin/rooms', {
+          headers: {
+            'x-admin-email': adminCredentials.email,
+            'x-admin-password': adminCredentials.password,
+          },
+        });
+        const roomsData = await roomsRes.json();
+        if (roomsData.success && roomsData.data) {
+          setRooms(roomsData.data);
+        } else {
+          setRooms(getMockRooms());
+        }
       } catch (error) {
         console.error('Error loading fellowship data:', error);
         setChallenges(getMockChallenges());
@@ -337,6 +357,88 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting scholarship:', error);
       toast.error('Failed to delete scholarship');
+    }
+  };
+
+  // Handle challenge status update (cancel, complete)
+  const handleUpdateChallengeStatus = async (challengeId: string, status: string) => {
+    if (!adminCredentials) return;
+
+    try {
+      const res = await fetch('/api/admin/fellowships', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminEmail: adminCredentials.email,
+          adminPassword: adminCredentials.password,
+          challengeId,
+          status,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Challenge status updated to ${status}`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to update challenge');
+      }
+    } catch (error) {
+      console.error('Error updating challenge:', error);
+      toast.error('Failed to update challenge');
+    }
+  };
+
+  // Handle escrow release/dispute
+  const handleEscrowAction = async (roomId: string, action: 'release' | 'refund') => {
+    if (!adminCredentials) return;
+
+    try {
+      const res = await fetch('/api/admin/rooms', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminEmail: adminCredentials.email,
+          adminPassword: adminCredentials.password,
+          roomId,
+          action,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        fetchData();
+      } else {
+        toast.error(data.error || 'Failed to update escrow');
+      }
+    } catch (error) {
+      console.error('Error updating escrow:', error);
+      toast.error('Failed to update escrow');
+    }
+  };
+
+  // Fetch room messages for inline viewing
+  const handleViewRoomMessages = async (roomId: string) => {
+    if (!adminCredentials) return;
+
+    try {
+      const res = await fetch(`/api/admin/rooms?id=${roomId}&messages=true`, {
+        headers: {
+          'x-admin-email': adminCredentials.email,
+          'x-admin-password': adminCredentials.password,
+        },
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSelectedRoom(data.data);
+      } else {
+        toast.error('Failed to load room details');
+      }
+    } catch (error) {
+      console.error('Error loading room:', error);
+      toast.error('Failed to load room');
     }
   };
 
@@ -1024,7 +1126,7 @@ export default function AdminDashboard() {
                           variant="ghost"
                           size="sm"
                           className="text-slate-400 hover:text-white"
-                          onClick={() => setSelectedRoom(room)}
+                          onClick={() => handleViewRoomMessages(room.id)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1192,7 +1294,7 @@ export default function AdminDashboard() {
 
         {/* Room Details Dialog */}
         <Dialog open={!!selectedRoom} onOpenChange={() => setSelectedRoom(null)}>
-          <DialogContent className="max-w-2xl bg-slate-900 border-slate-700">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-emerald-500" />
@@ -1204,7 +1306,7 @@ export default function AdminDashboard() {
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-white">{selectedRoom.challengeTitle}</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div className="space-y-1">
                     <Label className="text-slate-400">Student</Label>
                     <p className="text-white">{selectedRoom.studentName}</p>
@@ -1219,7 +1321,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-slate-400">Escrow Status</Label>
-                    <Badge variant="outline" className={selectedRoom.escrowStatus === 'held' ? 'text-yellow-400 border-yellow-600' : 'text-green-400 border-green-600'}>
+                    <Badge variant="outline" className={selectedRoom.escrowStatus === 'held' ? 'text-yellow-400 border-yellow-600' : selectedRoom.escrowStatus === 'released' ? 'text-green-400 border-green-600' : 'text-red-400 border-red-600'}>
                       {selectedRoom.escrowStatus}
                     </Badge>
                   </div>
@@ -1234,6 +1336,51 @@ export default function AdminDashboard() {
                     <p className="text-white">{format(new Date(selectedRoom.createdAt), 'MMM d, yyyy')}</p>
                   </div>
                 </div>
+
+                {/* Escrow Action Buttons */}
+                {selectedRoom.escrowStatus === 'held' && (
+                  <div className="flex gap-2 pt-4 border-t border-slate-700">
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        handleEscrowAction(selectedRoom.id, 'release');
+                        setSelectedRoom(null);
+                      }}
+                    >
+                      <CheckCircle className="mr-1 h-4 w-4" /> Release to Student
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-600 text-red-400 hover:bg-red-600/20"
+                      onClick={() => {
+                        handleEscrowAction(selectedRoom.id, 'refund');
+                        setSelectedRoom(null);
+                      }}
+                    >
+                      <AlertTriangle className="mr-1 h-4 w-4" /> Mark Disputed
+                    </Button>
+                  </div>
+                )}
+
+                {/* Messages Section */}
+                {selectedRoom.messages && selectedRoom.messages.length > 0 && (
+                  <div className="pt-4 border-t border-slate-700">
+                    <h4 className="text-sm font-medium text-slate-300 mb-3">Chat Messages ({selectedRoom.messages.length})</h4>
+                    <div className="max-h-60 overflow-y-auto space-y-2 bg-slate-800/50 rounded-lg p-3">
+                      {selectedRoom.messages.map((msg: any, idx: number) => (
+                        <div key={msg.id || idx} className={`p-2 rounded ${msg.senderRole === 'corporate' ? 'bg-blue-900/30' : 'bg-emerald-900/30'}`}>
+                          <div className="flex justify-between text-xs text-slate-400">
+                            <span className="font-medium">{msg.senderName}</span>
+                            <span>{msg.createdAt ? format(new Date(msg.createdAt), 'MMM d, HH:mm') : ''}</span>
+                          </div>
+                          <p className="text-white text-sm mt-1">{msg.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>

@@ -401,6 +401,9 @@ export const verifyStudentManually = async (userId: string): Promise<void> => {
 // HELPER: SELECT PROPOSAL AND CREATE ROOM
 // ============================================
 
+/**
+ * @deprecated Use initiateProposalSelection + confirmProposalSelection for proper escrow flow
+ */
 export const selectProposalAndCreateRoom = async (
     challengeId: string,
     proposalId: string,
@@ -443,4 +446,83 @@ export const selectProposalAndCreateRoom = async (
     });
 
     return roomId;
+};
+
+// ============================================
+// ESCROW PAYMENT FLOW: Two-phase selection
+// ============================================
+
+/**
+ * Phase 1: Mark proposal as payment_pending before Razorpay checkout
+ * Called when corporate clicks "Select & Award Fellowship"
+ */
+export const initiateProposalSelection = async (
+    proposalId: string
+): Promise<void> => {
+    await updateProposalStatus(proposalId, 'payment_pending');
+};
+
+/**
+ * Phase 2: Confirm selection after successful Razorpay payment
+ * Creates the project room and rejects other proposals
+ */
+export const confirmProposalSelection = async (
+    challengeId: string,
+    proposalId: string,
+    challenge: Challenge,
+    proposal: Proposal,
+    razorpayPaymentId: string
+): Promise<string> => {
+    // Update proposal status to selected
+    await updateProposalStatus(proposalId, 'selected');
+
+    // Reject other pending proposals
+    const otherProposals = await getProposalsByChallenge(challengeId);
+    for (const p of otherProposals) {
+        if (p.id !== proposalId && (p.status === 'pending' || p.status === 'payment_pending')) {
+            await updateProposalStatus(p.id, 'rejected');
+        }
+    }
+
+    // Update challenge status
+    await updateChallengeStatus(challengeId, 'in_progress', proposalId);
+
+    // Create project room with escrow held
+    const roomId = await createProjectRoom({
+        challengeId,
+        challengeTitle: challenge.title,
+        studentId: proposal.studentId,
+        studentName: proposal.studentName,
+        corporateId: challenge.corporateId,
+        corporateName: challenge.corporateName,
+        escrowAmount: challenge.price,
+    });
+
+    // Store payment reference in the room (optional: extend ProjectRoom type if needed)
+    const roomsCollection = getCollectionRef('projectRooms');
+    const roomRef = doc(roomsCollection, roomId);
+    await updateDoc(roomRef, {
+        razorpayPaymentId,
+    });
+
+    // Add initial milestone message
+    await createRoomMessage({
+        roomId,
+        senderId: 'system',
+        senderName: 'System',
+        senderRole: 'corporate',
+        content: `Project started! ${proposal.studentName}'s proposal was selected. ₹${challenge.price.toLocaleString()} is now held in escrow via payment ${razorpayPaymentId}.`,
+        type: 'milestone',
+    });
+
+    return roomId;
+};
+
+/**
+ * Revert proposal selection if payment fails/cancelled
+ */
+export const revertProposalSelection = async (
+    proposalId: string
+): Promise<void> => {
+    await updateProposalStatus(proposalId, 'pending');
 };

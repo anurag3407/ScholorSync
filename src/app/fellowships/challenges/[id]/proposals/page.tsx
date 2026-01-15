@@ -31,15 +31,34 @@ import { format } from 'date-fns';
 import {
     getChallenge,
     getProposalsByChallenge,
-    selectProposalAndCreateRoom,
+    initiateProposalSelection,
+    revertProposalSelection,
 } from '@/lib/firebase/fellowships';
 import type { Challenge, Proposal } from '@/types/fellowships';
 import { CHALLENGE_CATEGORIES } from '@/types/fellowships';
+import { toast } from 'sonner';
 
-const PROPOSAL_STATUS_STYLES = {
+const PROPOSAL_STATUS_STYLES: Record<string, string> = {
     pending: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    payment_pending: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
     selected: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
     rejected: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+};
+
+// Load Razorpay script dynamically
+const loadRazorpay = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+        if ((window as any).Razorpay) {
+            resolve(true);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
 };
 
 export default function ProposalsPage() {
@@ -93,23 +112,97 @@ export default function ProposalsPage() {
 
         setSelecting(true);
         try {
-            const roomId = await selectProposalAndCreateRoom(
-                challengeId,
-                selectedProposal.id,
-                challenge,
-                selectedProposal
-            );
-            setSuccess(true);
-            setTimeout(() => {
-                router.push(`/fellowships/room/${roomId}`);
-            }, 2000);
+            // 1️⃣ Load Razorpay script
+            const loaded = await loadRazorpay();
+            if (!loaded) {
+                toast.error('Payment gateway failed to load. Please try again.');
+                setSelecting(false);
+                return;
+            }
+
+            // 2️⃣ Mark proposal as payment pending
+            await initiateProposalSelection(selectedProposal.id);
+
+            // 3️⃣ Create Razorpay order for escrow
+            const orderRes = await fetch('/api/payments/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'escrow',
+                    amount: challenge.price,
+                    challengeId,
+                    proposalId: selectedProposal.id,
+                }),
+            });
+            const orderData = await orderRes.json();
+
+            if (!orderData.success) {
+                await revertProposalSelection(selectedProposal.id);
+                throw new Error('Failed to create payment order');
+            }
+
+            // 4️⃣ Open Razorpay checkout
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                order_id: orderData.orderId,
+                name: 'Fellowship Escrow',
+                description: `Award fellowship for: ${challenge.title}`,
+                handler: async function (response: any) {
+                    try {
+                        // 5️⃣ Confirm escrow payment and create room
+                        const confirmRes = await fetch('/api/payments/escrow-confirm', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...response,
+                                challengeId,
+                                proposalId: selectedProposal.id,
+                            }),
+                        });
+                        const confirmData = await confirmRes.json();
+
+                        if (confirmData.success && confirmData.roomId) {
+                            setSuccess(true);
+                            toast.success('Fellowship awarded successfully! 🎉');
+                            setTimeout(() => {
+                                router.push(`/fellowships/room/${confirmData.roomId}`);
+                            }, 2000);
+                        } else {
+                            throw new Error(confirmData.error || 'Confirmation failed');
+                        }
+                    } catch (err) {
+                        console.error('Escrow confirm error:', err);
+                        toast.error('Payment confirmed but room creation failed.');
+                    }
+                },
+                modal: {
+                    ondismiss: async function () {
+                        // Revert if user closes payment modal
+                        await revertProposalSelection(selectedProposal.id);
+                        toast.info('Payment cancelled. Proposal status restored.');
+                        setSelecting(false);
+                        setShowConfirmModal(false);
+                    },
+                },
+                prefill: {
+                    email: user?.email || '',
+                },
+                theme: {
+                    color: '#10B981', // emerald-600
+                },
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
         } catch (error) {
             console.error('Error selecting proposal:', error);
-            // For demo, simulate success
-            setSuccess(true);
-            setTimeout(() => {
-                router.push('/fellowships/rooms');
-            }, 2000);
+            toast.error('Failed to initiate payment. Please try again.');
+            // Revert proposal status
+            if (selectedProposal) {
+                await revertProposalSelection(selectedProposal.id);
+            }
         } finally {
             setSelecting(false);
         }
@@ -227,6 +320,7 @@ export default function ProposalsPage() {
                                                 <div className="flex items-center gap-2">
                                                     <Badge className={PROPOSAL_STATUS_STYLES[proposal.status]}>
                                                         {proposal.status === 'pending' && 'Under Review'}
+                                                        {proposal.status === 'payment_pending' && '💳 Payment Processing'}
                                                         {proposal.status === 'selected' && '✓ Selected'}
                                                         {proposal.status === 'rejected' && 'Not Selected'}
                                                     </Badge>

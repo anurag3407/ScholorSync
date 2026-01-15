@@ -3,7 +3,7 @@
 export type UserRole = 'student' | 'corporate';
 export type ChallengeCategory = 'design' | 'content' | 'development' | 'research' | 'marketing';
 export type ChallengeStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
-export type ProposalStatus = 'pending' | 'selected' | 'rejected';
+export type ProposalStatus = 'pending' | 'payment_pending' | 'selected' | 'rejected';
 export type EscrowStatus = 'held' | 'released' | 'disputed';
 export type RoomStatus = 'active' | 'completed' | 'cancelled';
 export type MessageType = 'text' | 'file' | 'milestone';

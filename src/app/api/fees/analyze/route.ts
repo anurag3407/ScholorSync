@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUser } from '@/lib/firebase/firestore';
 import { getFeeStructureByCollegeName } from '@/lib/firebase/firestore';
 import { analyzeFeeAnomaly } from '@/lib/langchain/chains';
-import Tesseract from 'tesseract.js';
+
+// Force dynamic rendering - prevents static generation issues
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +55,8 @@ export async function POST(request: NextRequest) {
 
     let receiptText = '';
     if (file.type.startsWith('image/')) {
+      // Dynamic import to avoid build-time issues on Vercel
+      const Tesseract = await import('tesseract.js');
       const ocrResult = await Tesseract.recognize(buffer, 'eng');
       receiptText = ocrResult.data.text;
     } else {

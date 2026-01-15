@@ -159,6 +159,8 @@ export default function AdminDashboard() {
     eligibilityText: '',
     description: '',
     deadline: '',
+    applicationUrl: '',
+    sourceUrl: '',
     documentsRequired: '',
   });
 
@@ -272,8 +274,8 @@ export default function AdminDashboard() {
       description: '',
       deadline: '',
       applicationUrl: '',
-      documentsRequired: '',
       sourceUrl: '',
+      documentsRequired: '',
     });
   };
 

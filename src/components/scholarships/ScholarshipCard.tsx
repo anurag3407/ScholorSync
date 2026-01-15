@@ -290,7 +290,6 @@ export function ScholarshipCard({
           )}
         </Button>
 
-        {/* Show in-app Apply for admin scholarships (no applicationUrl) or external link for scraped */}
         {scholarship.applicationUrl ? (
           <Button
             size="sm"

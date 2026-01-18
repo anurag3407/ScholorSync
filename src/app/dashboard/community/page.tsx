@@ -9,10 +9,20 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, 
-  MessageSquare, 
-  ThumbsUp, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Users,
+  MessageSquare,
+  ThumbsUp,
   Search,
   Award,
   Loader2,
@@ -23,7 +33,7 @@ import Link from 'next/link';
 
 interface SuccessStory {
   id: string;
-  name: string;
+  authorName: string;
   avatar: string;
   scholarship: string;
   amount: string;
@@ -53,52 +63,35 @@ export default function CommunityPage() {
   const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
 
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
+  const [storyForm, setStoryForm] = useState({
+    scholarship: '',
+    amount: '',
+    tips: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user && isConfigured) {
       router.push('/auth/login');
     }
   }, [user, authLoading, router, isConfigured]);
 
-  // Load dummy data for demonstration
-  useEffect(() => {
-    // Dummy success stories data
-    const dummyStories: SuccessStory[] = [
-      {
-        id: '1',
-        name: 'Priya Sharma',
-        avatar: 'PS',
-        scholarship: 'INSPIRE SHE',
-        amount: '₹80,000/year',
-        tips: 'Focus on your SOP! I spent two weeks perfecting mine. Highlight your research interests and career goals clearly. Also, make sure to apply early - I applied in the first week.',
-        likes: 42,
-        comments: 12,
-        createdAt: '2024-01-15'
-      },
-      {
-        id: '2',
-        name: 'Rahul Verma',
-        avatar: 'RV',
-        scholarship: 'AICTE Pragati',
-        amount: '₹50,000',
-        tips: 'Document verification is crucial. Keep all your income certificates and caste certificates ready. I almost missed the deadline because of document issues.',
-        likes: 38,
-        comments: 8,
-        createdAt: '2024-01-10'
-      },
-      {
-        id: '3',
-        name: 'Ananya Patel',
-        avatar: 'AP',
-        scholarship: 'Post Matric SC',
-        amount: '₹30,000/year',
-        tips: 'Apply through the state portal first thing in the morning. The servers get busy later. Also, keep checking your application status regularly.',
-        likes: 56,
-        comments: 15,
-        createdAt: '2024-01-05'
+  const fetchStories = async () => {
+    try {
+      const response = await fetch('/api/community/stories');
+      if (response.ok) {
+        const data = await response.json();
+        setSuccessStories(data.stories || []);
       }
-    ];
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    }
+  };
 
-    // Dummy discussions data
+  useEffect(() => {
+    fetchStories();
+
     const dummyDiscussions: Discussion[] = [
       {
         id: '1',
@@ -142,14 +135,48 @@ export default function CommunityPage() {
       }
     ];
 
-    setSuccessStories(dummyStories);
     setDiscussions(dummyDiscussions);
   }, []);
+
+  const handleStorySubmit = async () => {
+    if (!user) return;
+
+    if (!storyForm.scholarship || !storyForm.amount || !storyForm.tips) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const userName = user.profile?.name || user.email?.split('@')[0] || 'Anonymous';
+      const response = await fetch('/api/community/stories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          userName: userName,
+          userAvatar: userName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U',
+          scholarship: storyForm.scholarship,
+          amount: storyForm.amount,
+          tips: storyForm.tips
+        })
+      });
+
+      if (response.ok) {
+        setIsStoryModalOpen(false);
+        setStoryForm({ scholarship: '', amount: '', tips: '' });
+        fetchStories(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error submitting story:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
       if (!user) return;
-      
+
       try {
         const response = await fetch(`/api/profile?uid=${user.uid}`);
         if (response.ok) {
@@ -311,7 +338,7 @@ export default function CommunityPage() {
                   </CardDescription>
                 </div>
                 {profileComplete && (
-                  <Button className="gap-2">
+                  <Button className="gap-2" onClick={() => setIsStoryModalOpen(true)}>
                     <Plus className="h-4 w-4" />
                     Share Your Story
                   </Button>
@@ -329,7 +356,7 @@ export default function CommunityPage() {
                     Be the first to share your scholarship success story and help others!
                   </p>
                   {profileComplete && (
-                    <Button className="mt-4 gap-2">
+                    <Button className="mt-4 gap-2" onClick={() => setIsStoryModalOpen(true)}>
                       <Plus className="h-4 w-4" />
                       Share Your Story
                     </Button>
@@ -349,7 +376,7 @@ export default function CommunityPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium text-slate-900 dark:text-white">
-                              {story.name}
+                              {story.authorName}
                             </h4>
                             <Badge variant="secondary" className="text-green-700 bg-green-100">
                               {story.scholarship}
@@ -459,6 +486,66 @@ export default function CommunityPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Story Submission Modal */}
+      <Dialog open={isStoryModalOpen} onOpenChange={setIsStoryModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Share Your Success Story</DialogTitle>
+            <DialogDescription>
+              Inspire others by sharing how you won your scholarship. Your tips can help fellow students!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="scholarship">Scholarship Name *</Label>
+              <Input
+                id="scholarship"
+                placeholder="e.g., INSPIRE SHE, AICTE Pragati"
+                value={storyForm.scholarship}
+                onChange={(e) => setStoryForm(prev => ({ ...prev, scholarship: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="amount">Amount Received *</Label>
+              <Input
+                id="amount"
+                placeholder="e.g., ₹50,000/year"
+                value={storyForm.amount}
+                onChange={(e) => setStoryForm(prev => ({ ...prev, amount: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tips">Your Tips & Advice *</Label>
+              <Textarea
+                id="tips"
+                placeholder="Share what helped you succeed - application tips, important documents, timeline advice..."
+                className="min-h-[120px]"
+                value={storyForm.tips}
+                onChange={(e) => setStoryForm(prev => ({ ...prev, tips: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStoryModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStorySubmit}
+              disabled={submitting || !storyForm.scholarship || !storyForm.amount || !storyForm.tips}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sharing...
+                </>
+              ) : (
+                'Share Story'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

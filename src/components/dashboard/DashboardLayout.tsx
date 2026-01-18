@@ -35,9 +35,11 @@ import {
   Briefcase,
   ArrowRight,
   X,
+  MessageSquareText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SkyToggle from '@/components/ui/sky-toggle';
+import { ChatBot } from '@/components/chatbot/ChatBot';
 
 interface Broadcast {
   id: string;
@@ -342,6 +344,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
+
+      {/* Floating ChatBot */}
+      <ChatBot />
     </div>
   );
 }

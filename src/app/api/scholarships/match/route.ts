@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       try {
         const profileEmbedding = await generateProfileEmbedding(user.profile);
         const vectorResults = await querySimilarScholarships(profileEmbedding, 20);
-        
+
         // Get full scholarship data for matched IDs
         const allScholarships = await getAllScholarships();
         const matchedIds = new Set(vectorResults.map((r) => r.id));
@@ -157,8 +157,51 @@ export async function POST(request: NextRequest) {
       scholarships = await getAllScholarships();
     }
 
-    // Calculate match percentages
-    const matchedScholarships: ScholarshipMatch[] = scholarships.map((scholarship) => {
+    // Pre-filter scholarships based on strict eligibility criteria
+    const eligibleScholarships = scholarships.filter((scholarship) => {
+      const eligibility = scholarship.eligibility || {};
+      const categories = eligibility.categories || [];
+      const states = eligibility.states || [];
+      const incomeLimit = eligibility.incomeLimit || 0;
+      const gender = eligibility.gender || 'all';
+      const yearRange = eligibility.yearRange || [1, 6];
+
+      // Strict income check - if income limit is set and user exceeds it, exclude
+      if (incomeLimit > 0 && user.profile.income > incomeLimit) {
+        return false;
+      }
+
+      // Strict category check - if categories specified and user not in list, exclude
+      if (categories.length > 0 &&
+        !categories.includes('all') &&
+        !categories.includes(user.profile.category)) {
+        return false;
+      }
+
+      // Strict state check - if states specified and user not in list, exclude
+      if (states.length > 0 &&
+        !states.includes('all') &&
+        !states.includes('All States') &&
+        !states.includes(user.profile.state)) {
+        return false;
+      }
+
+      // Strict gender check
+      if (gender !== 'all' && gender !== user.profile.gender) {
+        return false;
+      }
+
+      // Strict year check
+      const [minYear, maxYear] = yearRange;
+      if (user.profile.year < minYear || user.profile.year > maxYear) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Calculate match percentages for eligible scholarships only
+    const matchedScholarships: ScholarshipMatch[] = eligibleScholarships.map((scholarship) => {
       const { percentage, matchReasons, missingCriteria } = calculateMatchPercentage(
         user.profile,
         scholarship
@@ -171,13 +214,18 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Filter to only include scholarships with meaningful match (≥40%)
+    const filteredScholarships = matchedScholarships.filter(s => s.matchPercentage >= 40);
+
     // Sort by match percentage
-    matchedScholarships.sort((a, b) => b.matchPercentage - a.matchPercentage);
+    filteredScholarships.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
     return NextResponse.json({
       success: true,
-      scholarships: matchedScholarships,
-      count: matchedScholarships.length,
+      scholarships: filteredScholarships,
+      totalInDatabase: scholarships.length,
+      eligibleCount: eligibleScholarships.length,
+      count: filteredScholarships.length,
     });
   } catch (error) {
     console.error('Error matching scholarships:', error);
@@ -216,7 +264,7 @@ export async function GET(request: NextRequest) {
       // Use vector search for semantic matching
       const profileEmbedding = await generateProfileEmbedding(user.profile);
       const vectorResults = await querySimilarScholarships(profileEmbedding, 20);
-      
+
       // Get full scholarship data for matched IDs
       const allScholarships = await getAllScholarships();
       const matchedIds = new Set(vectorResults.map((r) => r.id));
@@ -226,8 +274,51 @@ export async function GET(request: NextRequest) {
       scholarships = await getAllScholarships();
     }
 
-    // Calculate match percentages
-    const matchedScholarships: ScholarshipMatch[] = scholarships.map((scholarship) => {
+    // Pre-filter scholarships based on strict eligibility criteria
+    const eligibleScholarships = scholarships.filter((scholarship) => {
+      const eligibility = scholarship.eligibility || {};
+      const categories = eligibility.categories || [];
+      const states = eligibility.states || [];
+      const incomeLimit = eligibility.incomeLimit || 0;
+      const gender = eligibility.gender || 'all';
+      const yearRange = eligibility.yearRange || [1, 6];
+
+      // Strict income check
+      if (incomeLimit > 0 && user.profile.income > incomeLimit) {
+        return false;
+      }
+
+      // Strict category check
+      if (categories.length > 0 &&
+        !categories.includes('all') &&
+        !categories.includes(user.profile.category)) {
+        return false;
+      }
+
+      // Strict state check
+      if (states.length > 0 &&
+        !states.includes('all') &&
+        !states.includes('All States') &&
+        !states.includes(user.profile.state)) {
+        return false;
+      }
+
+      // Strict gender check
+      if (gender !== 'all' && gender !== user.profile.gender) {
+        return false;
+      }
+
+      // Strict year check
+      const [minYear, maxYear] = yearRange;
+      if (user.profile.year < minYear || user.profile.year > maxYear) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Calculate match percentages for eligible scholarships only
+    const matchedScholarships: ScholarshipMatch[] = eligibleScholarships.map((scholarship) => {
       const { percentage, matchReasons, missingCriteria } = calculateMatchPercentage(
         user.profile,
         scholarship
@@ -240,13 +331,18 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Filter to only include scholarships with meaningful match (≥40%)
+    const filteredScholarships = matchedScholarships.filter(s => s.matchPercentage >= 40);
+
     // Sort by match percentage
-    matchedScholarships.sort((a, b) => b.matchPercentage - a.matchPercentage);
+    filteredScholarships.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
     return NextResponse.json({
       success: true,
-      data: matchedScholarships,
-      count: matchedScholarships.length,
+      data: filteredScholarships,
+      totalInDatabase: scholarships.length,
+      eligibleCount: eligibleScholarships.length,
+      count: filteredScholarships.length,
     });
   } catch (error) {
     console.error('Error matching scholarships:', error);

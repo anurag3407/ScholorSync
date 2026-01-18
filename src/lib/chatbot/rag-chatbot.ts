@@ -81,13 +81,14 @@ async function generateQueryEmbedding(query: string): Promise<number[]> {
   return result.embedding.values;
 }
 
-// Search scholarships using vector similarity
+// Search scholarships using vector similarity (with Firestore fallback)
 async function searchScholarships(
   query: string,
   profile?: UserProfile,
   topK: number = 10
 ): Promise<ScholarshipMatch[]> {
   try {
+    // First, try Pinecone vector search
     const pc = getPinecone();
     const index = pc.index(PINECONE_INDEX);
 
@@ -118,40 +119,153 @@ async function searchScholarships(
       filter: Object.keys(filter).length > 0 ? filter : undefined,
     });
 
-    if (!results.matches || results.matches.length === 0) {
+    if (results.matches && results.matches.length > 0) {
+      return results.matches.map(match => {
+        const metadata = match.metadata as unknown as PineconeMetadata;
+
+        // Calculate match score based on profile compatibility
+        let matchScore = (match.score || 0) * 100;
+
+        if (profile && metadata) {
+          if (profile.income && metadata.incomeLimit > 0 && profile.income <= metadata.incomeLimit) {
+            matchScore += 10;
+          }
+          if (profile.percentage && metadata.minPercentage && profile.percentage >= metadata.minPercentage) {
+            matchScore += 10;
+          }
+        }
+
+        return {
+          id: match.id,
+          name: metadata?.name || 'Unknown Scholarship',
+          provider: metadata?.provider || 'Unknown Provider',
+          amount: { min: metadata?.amountMin || 0, max: metadata?.amountMax || 0 },
+          deadline: metadata?.deadline || 'Not specified',
+          applicationUrl: metadata?.applicationUrl || '',
+          eligibilityText: metadata?.eligibilityText || '',
+          benefits: metadata?.benefits || '',
+          matchScore: Math.min(matchScore, 100),
+        };
+      }).sort((a, b) => b.matchScore - a.matchScore);
+    }
+
+    // Fallback: Fetch from Firestore if Pinecone returns no results
+    console.log('Pinecone returned no results, falling back to Firestore...');
+    return await fetchScholarshipsFromFirestore(profile, topK);
+  } catch (error) {
+    console.error('Error searching scholarships:', error);
+    // Fallback to Firestore on any error
+    try {
+      return await fetchScholarshipsFromFirestore(profile, topK);
+    } catch (firestoreError) {
+      console.error('Firestore fallback also failed:', firestoreError);
+      return [];
+    }
+  }
+}
+
+// Fetch scholarships from Firestore with profile-based matching
+async function fetchScholarshipsFromFirestore(
+  profile?: UserProfile,
+  limit: number = 10
+): Promise<ScholarshipMatch[]> {
+  try {
+    // Import Firestore functions dynamically to avoid circular dependencies
+    const { getAllScholarships } = await import('@/lib/firebase/firestore');
+
+    const allScholarships = await getAllScholarships();
+
+    if (!allScholarships || allScholarships.length === 0) {
       return [];
     }
 
-    return results.matches.map(match => {
-      const metadata = match.metadata as unknown as PineconeMetadata;
+    // Filter and calculate match scores based on profile
+    const matchedScholarships: ScholarshipMatch[] = allScholarships
+      .map(scholarship => {
+        let matchScore = 50; // Base score
+        const eligibility = scholarship.eligibility || {};
 
-      // Calculate match score based on profile compatibility
-      let matchScore = (match.score || 0) * 100;
+        if (profile) {
+          // Income check
+          const incomeLimit = eligibility.incomeLimit || 0;
+          if (incomeLimit > 0 && profile.income) {
+            if (profile.income <= incomeLimit) {
+              matchScore += 15;
+            } else {
+              matchScore -= 20; // Penalty for exceeding income limit
+            }
+          }
 
-      if (profile && metadata) {
-        if (profile.income && metadata.incomeLimit > 0 && profile.income <= metadata.incomeLimit) {
-          matchScore += 10;
+          // Category check
+          const categories = eligibility.categories || [];
+          if (categories.length > 0 && profile.category) {
+            if (categories.includes('all') || categories.includes(profile.category)) {
+              matchScore += 15;
+            } else {
+              matchScore -= 15;
+            }
+          }
+
+          // State check
+          const states = eligibility.states || [];
+          if (states.length > 0 && profile.state) {
+            if (states.includes('all') || states.includes('All States') || states.includes(profile.state)) {
+              matchScore += 10;
+            } else {
+              matchScore -= 10;
+            }
+          }
+
+          // Gender check
+          const gender = eligibility.gender || 'all';
+          if (gender !== 'all' && profile.gender) {
+            if (gender.toLowerCase() === profile.gender.toLowerCase()) {
+              matchScore += 5;
+            } else {
+              matchScore -= 20;
+            }
+          }
+
+          // Percentage check
+          const minPercentage = eligibility.minPercentage || 0;
+          if (minPercentage > 0 && profile.percentage) {
+            if (profile.percentage >= minPercentage) {
+              matchScore += 10;
+            } else {
+              matchScore -= 15;
+            }
+          }
+
+          // Year check
+          const yearRange = eligibility.yearRange || [1, 6];
+          if (profile.year) {
+            if (profile.year >= yearRange[0] && profile.year <= yearRange[1]) {
+              matchScore += 5;
+            } else {
+              matchScore -= 10;
+            }
+          }
         }
-        if (profile.percentage && metadata.minPercentage && profile.percentage >= metadata.minPercentage) {
-          matchScore += 10;
-        }
-      }
 
-      return {
-        id: match.id,
-        name: metadata?.name || 'Unknown Scholarship',
-        provider: metadata?.provider || 'Unknown Provider',
-        amount: { min: metadata?.amountMin || 0, max: metadata?.amountMax || 0 },
-        deadline: metadata?.deadline || 'Not specified',
-        applicationUrl: metadata?.applicationUrl || '',
-        eligibilityText: metadata?.eligibilityText || '',
-        benefits: metadata?.benefits || '',
-        matchScore: Math.min(matchScore, 100),
-      };
-    }).sort((a, b) => b.matchScore - a.matchScore);
+        return {
+          id: scholarship.id,
+          name: scholarship.name,
+          provider: scholarship.provider,
+          amount: scholarship.amount,
+          deadline: scholarship.deadline,
+          applicationUrl: scholarship.applicationUrl,
+          eligibilityText: scholarship.eligibilityText || '',
+          benefits: scholarship.description || '',
+          matchScore: Math.max(0, Math.min(100, matchScore)),
+        };
+      })
+      .filter(s => s.matchScore >= 30) // Only include scholarships with reasonable match
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, limit);
+
+    return matchedScholarships;
   } catch (error) {
-    console.error('Error searching scholarships:', error);
-    // Return empty array to allow chat to continue with general responses
+    console.error('Error fetching from Firestore:', error);
     return [];
   }
 }
@@ -241,31 +355,39 @@ async function generateChatResponse(
    - Amount: ₹${s.amount.min.toLocaleString()} - ₹${s.amount.max.toLocaleString()}
    - Deadline: ${s.deadline}
    - Eligibility: ${s.eligibilityText}
-   - Benefits: ${s.benefits}
    - Match Score: ${s.matchScore.toFixed(0)}%
-   - Apply: ${s.applicationUrl}`
+   - Apply Link: ${s.applicationUrl || 'Not available'}`
   ).join('\n\n');
+
+  // Build profile summary for context
+  const profileSummary = profile
+    ? `User: ${profile.category || 'Not specified'} category, Income: ₹${profile.income?.toLocaleString() || 'Not specified'}, Marks: ${profile.percentage || 'Not specified'}%, State: ${profile.state || 'Not specified'}, Gender: ${profile.gender || 'Not specified'}, Year: ${profile.year || 'Not specified'}`
+    : 'Profile not available';
 
   const systemPrompt = `You are ScholarSync AI, an expert scholarship advisor for Indian students. You help students find and apply for scholarships.
 
-CONTEXT - Relevant Scholarships Found:
-${scholarshipContext || 'No specific scholarships found for this query.'}
+AVAILABLE SCHOLARSHIPS (Already filtered based on user's profile):
+${scholarshipContext || 'No scholarships found in database.'}
 
-USER PROFILE:
-${profile ? JSON.stringify(profile, null, 2) : 'Not provided yet'}
+USER PROFILE (ALREADY COLLECTED - USE THIS DATA):
+${profileSummary}
 
-GUIDELINES:
-1. Be helpful, encouraging, and supportive
-2. Provide specific scholarship recommendations based on the context
-3. If the user's profile is incomplete, ask relevant questions to help find better matches
-4. Explain eligibility requirements clearly
-5. Always mention deadlines and application links when available
-6. If asked about eligibility, use the scholarship data to give accurate answers
-7. Format responses with markdown for better readability
-8. Be concise but informative
-9. If you don't know something, admit it and suggest checking official sources
+CRITICAL INSTRUCTIONS:
+1. The scholarships above are ALREADY MATCHED to the user's profile. RECOMMEND THEM DIRECTLY.
+2. DO NOT ask for income, category, percentage, state, or gender - you ALREADY HAVE this information.
+3. For each scholarship recommendation, ALWAYS include:
+   - Scholarship name and provider
+   - Amount range
+   - Deadline
+   - Match score percentage
+   - Application link (if available)
+4. If scholarships are available, list them with their apply links. Don't just talk about them generically.
+5. Format: Use bullet points and make apply links clickable.
+6. Be encouraging and helpful. The user is looking for financial assistance.
+7. If asked about a specific scholarship, provide detailed information.
+8. Only ask questions if truly necessary for a NEW search - not for basic profile info.
 
-IMPORTANT: Only recommend scholarships from the context provided. Don't make up scholarship names or details.`;
+IMPORTANT: If scholarships are shown above, RECOMMEND them in your response with their apply links!`;
 
   // Use OpenRouter if API key is available
   if (OPENROUTER_API_KEY) {

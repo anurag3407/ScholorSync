@@ -51,9 +51,18 @@ interface UserProfile {
   year?: number;
 }
 
-export function ChatBot() {
+interface ChatBotProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function ChatBot({ isOpen: controlledIsOpen, onOpenChange }: ChatBotProps) {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = onOpenChange || setInternalIsOpen;
 
   // Build personalized greeting based on user profile
   const greeting = useMemo(() => {
@@ -197,12 +206,12 @@ export function ChatBot() {
         // Convert URLs to clickable links with word-break
         line = line.replace(
           /\[([^\]]+)\]\(([^)]+)\)/g,
-          '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline break-all">$1</a>'
+          '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800 underline break-all">$1</a>'
         );
         // Also handle plain URLs
         line = line.replace(
           /(?<!href=")(https?:\/\/[^\s<]+)/g,
-          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline break-all">$1</a>'
+          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800 underline break-all">$1</a>'
         );
         // Bullets
         if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
@@ -232,9 +241,9 @@ export function ChatBot() {
             <Button
               onClick={() => setIsOpen(true)}
               size="lg"
-              className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="h-[70px] w-[70px] rounded-full shadow-xl bg-white hover:bg-gray-50 hover:scale-105 transition-all border-2 border-green-500 p-1"
             >
-              <MessageCircle className="h-6 w-6" />
+              <img src="/chatbot-icon.png" alt="AI" className="h-14 w-12 object-contain" />
             </Button>
             <span className="absolute -top-1 -right-1 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -257,11 +266,11 @@ export function ChatBot() {
           >
             <Card className="shadow-2xl border-0 overflow-hidden flex flex-col h-full">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white flex-shrink-0">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Bot className="h-6 w-6" />
+                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                      <img src="/chatbot-icon.png" alt="AI" className="h-8 w-8" />
                     </div>
                     <div>
                       <h3 className="font-semibold">ScholarSync AI</h3>
@@ -301,8 +310,8 @@ export function ChatBot() {
                     >
                       <div
                         className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user'
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-purple-100 text-purple-600'
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-emerald-100 text-emerald-600'
                           }`}
                       >
                         {message.role === 'user' ? (
@@ -313,7 +322,7 @@ export function ChatBot() {
                       </div>
                       <div
                         className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                          ? 'bg-blue-600 text-white rounded-br-md'
+                          ? 'bg-green-600 text-white rounded-br-md'
                           : 'bg-gray-100 text-gray-800 rounded-bl-md'
                           }`}
                       >
@@ -348,7 +357,7 @@ export function ChatBot() {
                                     href={scholarship.applicationUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-green-600 hover:text-green-800"
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </a>
@@ -367,7 +376,7 @@ export function ChatBot() {
                       animate={{ opacity: 1 }}
                       className="flex gap-3"
                     >
-                      <div className="h-8 w-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
                         <Loader2 className="h-4 w-4 animate-spin" />
                       </div>
                       <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-2">
@@ -424,7 +433,7 @@ export function ChatBot() {
                     type="submit"
                     size="icon"
                     disabled={!input.trim() || isLoading}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
                   >
                     <Send className="h-4 w-4" />
                   </Button>

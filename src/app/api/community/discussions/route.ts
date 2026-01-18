@@ -10,7 +10,6 @@ import {
     Timestamp
 } from 'firebase/firestore';
 
-// Types
 interface Discussion {
     id: string;
     title: string;
@@ -20,12 +19,9 @@ interface Discussion {
     avatar: string;
     category: string;
     tags: string[];
-    replies: number;
-    views: number;
     createdAt: Timestamp | Date;
 }
 
-// GET - Fetch all discussions
 export async function GET() {
     try {
         const q = query(
@@ -50,7 +46,6 @@ export async function GET() {
     }
 }
 
-// POST - Create new discussion
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -78,8 +73,6 @@ export async function POST(request: NextRequest) {
             avatar: userAvatar || userName.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
             category: category || 'general',
             tags: tags || [],
-            replies: 0,
-            views: 0,
             createdAt: serverTimestamp(),
         };
 

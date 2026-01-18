@@ -5,10 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  GraduationCap, 
-  FileText, 
-  Receipt, 
+import {
+  GraduationCap,
+  FileText,
+  Receipt,
   TrendingUp,
   Clock,
   AlertCircle,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardAnalytics } from '@/components/dashboard/DashboardAnalytics';
+import { ChatBot } from '@/components/chatbot/ChatBot';
 
 interface DashboardStats {
   matchedScholarships: number;
@@ -58,7 +59,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchDashboardData() {
       if (!user) return;
-      
+
       try {
         const response = await fetch(`/api/profile?uid=${user.uid}`);
         if (response.ok) {
@@ -72,7 +73,7 @@ export default function DashboardPage() {
             appliedScholarships: data.appliedScholarships?.length || (hasData ? 0 : 2),
             profileComplete: data.profile?.isComplete || false
           });
-          
+
           // Add demo deadlines if no data
           if (!hasData) {
             setDeadlines([
@@ -401,6 +402,9 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Floating ChatBot */}
+      <ChatBot />
     </div>
   );
 }

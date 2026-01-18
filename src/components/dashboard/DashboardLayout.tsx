@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,9 +33,20 @@ import {
   Lightbulb,
   ClipboardList,
   Briefcase,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SkyToggle from '@/components/ui/sky-toggle';
+
+interface Broadcast {
+  id: string;
+  title: string;
+  description?: string;
+  variant: 'info' | 'warning' | 'success' | 'teal';
+  link?: string;
+  linkText?: string;
+}
 
 const sidebarItems = [
   {
@@ -160,12 +171,47 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
+  const [showBroadcast, setShowBroadcast] = useState(true);
+
+  // Fetch active broadcast
+  useEffect(() => {
+    const fetchBroadcast = async () => {
+      try {
+        const response = await fetch('/api/admin/broadcasts');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.broadcast) {
+            setBroadcast(data.broadcast);
+            setShowBroadcast(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching broadcast:', error);
+      }
+    };
+
+    fetchBroadcast();
+  }, []);
 
   const handleLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error('Error logging out:', error);
+    }
+  };
+
+  const getVariantStyles = (variant: string) => {
+    switch (variant) {
+      case 'warning':
+        return 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-100';
+      case 'success':
+        return 'bg-green-50 border-green-200 text-green-900 dark:bg-green-900/20 dark:border-green-800 dark:text-green-100';
+      case 'teal':
+        return 'bg-teal-50 border-teal-200 text-teal-900 dark:bg-teal-900/20 dark:border-teal-800 dark:text-teal-100';
+      default:
+        return 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-100';
     }
   };
 
@@ -185,6 +231,42 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Broadcast Banner */}
+        {broadcast && showBroadcast && (
+          <div className={cn(
+            'flex items-center justify-between px-4 py-2 border-b text-sm',
+            getVariantStyles(broadcast.variant)
+          )}>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <Sparkles className="h-4 w-4 flex-shrink-0" />
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="font-medium">{broadcast.title}</span>
+                {broadcast.description && (
+                  <span className="text-sm opacity-80 hidden sm:inline">— {broadcast.description}</span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {broadcast.link && (
+                <Link href={broadcast.link}>
+                  <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs">
+                    {broadcast.linkText || 'Learn More'}
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6"
+                onClick={() => setShowBroadcast(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="flex h-16 items-center justify-between border-b bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">

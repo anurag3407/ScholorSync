@@ -65,6 +65,7 @@ import {
   LayoutDashboard,
   Loader2,
   Filter,
+  Megaphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -133,13 +134,24 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [showOnlyMyScholarships, setShowOnlyMyScholarships] = useState(true); // Default to admin-only
+  const [showOnlyMyScholarships, setShowOnlyMyScholarships] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<(ProjectRoom & { messages?: any[] }) | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+
+  // Broadcast state
+  const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [broadcastForm, setBroadcastForm] = useState({
+    title: '',
+    description: '',
+    variant: 'info' as 'info' | 'warning' | 'success' | 'teal',
+    link: '',
+    linkText: '',
+  });
+  const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
 
   // Form state for new scholarship
   const [formData, setFormData] = useState({
@@ -494,6 +506,63 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch broadcasts
+  const fetchBroadcasts = async () => {
+    try {
+      const response = await fetch('/api/admin/broadcasts');
+      if (response.ok) {
+        const data = await response.json();
+        setBroadcasts(data.broadcast ? [data.broadcast] : []);
+      }
+    } catch (error) {
+      console.error('Error fetching broadcasts:', error);
+    }
+  };
+
+  // Create broadcast
+  const handleCreateBroadcast = async () => {
+    if (!broadcastForm.title) {
+      toast.error('Title is required');
+      return;
+    }
+    setBroadcastSubmitting(true);
+    try {
+      const response = await fetch('/api/admin/broadcasts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...broadcastForm,
+          adminId: user?.uid || 'admin',
+        }),
+      });
+      if (response.ok) {
+        toast.success('Broadcast created successfully');
+        setBroadcastForm({ title: '', description: '', variant: 'info', link: '', linkText: '' });
+        fetchBroadcasts();
+      } else {
+        toast.error('Failed to create broadcast');
+      }
+    } catch (error) {
+      console.error('Error creating broadcast:', error);
+      toast.error('Failed to create broadcast');
+    } finally {
+      setBroadcastSubmitting(false);
+    }
+  };
+
+  // Delete broadcast
+  const handleDeleteBroadcast = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/broadcasts?id=${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        toast.success('Broadcast deleted');
+        fetchBroadcasts();
+      }
+    } catch (error) {
+      console.error('Error deleting broadcast:', error);
+    }
+  };
+
   // Filter scholarships - Only show admin-created scholarships
   const filteredScholarships = scholarships.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -577,6 +646,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="rooms" className="gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
               <MessageSquare className="h-4 w-4" />
               Project Rooms
+            </TabsTrigger>
+            <TabsTrigger value="broadcasts" className="gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white" onClick={fetchBroadcasts}>
+              <Megaphone className="h-4 w-4" />
+              Broadcasts
             </TabsTrigger>
           </TabsList>
 
@@ -1137,6 +1210,136 @@ export default function AdminDashboard() {
                 </TableBody>
               </Table>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="broadcasts" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-amber-400" />
+                    Create Broadcast
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Send an announcement to all users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Title *</Label>
+                    <Input
+                      placeholder="e.g., 📢 New scholarship deadline extended!"
+                      value={broadcastForm.title}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Description (optional)</Label>
+                    <Input
+                      placeholder="Additional details..."
+                      value={broadcastForm.description}
+                      onChange={(e) => setBroadcastForm({ ...broadcastForm, description: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Style</Label>
+                    <Select
+                      value={broadcastForm.variant}
+                      onValueChange={(v) => setBroadcastForm({ ...broadcastForm, variant: v as any })}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectItem value="info">Info (Blue)</SelectItem>
+                        <SelectItem value="success">Success (Green)</SelectItem>
+                        <SelectItem value="warning">Warning (Amber)</SelectItem>
+                        <SelectItem value="teal">Teal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Link URL (optional)</Label>
+                      <Input
+                        placeholder="/dashboard/scholarships"
+                        value={broadcastForm.link}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, link: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Link Text</Label>
+                      <Input
+                        placeholder="Learn More"
+                        value={broadcastForm.linkText}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, linkText: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleCreateBroadcast}
+                    disabled={broadcastSubmitting || !broadcastForm.title}
+                    className="w-full bg-amber-600 hover:bg-amber-700"
+                  >
+                    {broadcastSubmitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Megaphone className="mr-2 h-4 w-4" />
+                    )}
+                    Send Broadcast
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Active Broadcasts</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Currently visible to all users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {broadcasts.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <Megaphone className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No active broadcasts</p>
+                      <p className="text-sm">Create one to notify all users</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {broadcasts.map((b: any) => (
+                        <div key={b.id} className="p-4 rounded-lg border border-slate-600 bg-slate-800/50">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-white">{b.title}</p>
+                              {b.description && (
+                                <p className="text-sm text-slate-400 mt-1">{b.description}</p>
+                              )}
+                              <div className="flex gap-2 mt-2">
+                                <Badge variant="outline" className="text-xs">{b.variant}</Badge>
+                                {b.link && <Badge variant="secondary" className="text-xs">Has Link</Badge>}
+                              </div>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                              onClick={() => handleDeleteBroadcast(b.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

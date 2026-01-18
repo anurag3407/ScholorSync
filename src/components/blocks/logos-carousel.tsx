@@ -1,6 +1,9 @@
 "use client";
 
 import AutoScroll from "embla-carousel-auto-scroll";
+
+
+
 import {
     Carousel,
     CarouselContent,
@@ -25,49 +28,49 @@ const defaultLogos: Logo[] = [
         id: "logo-1",
         description: "IIT Delhi",
         image: "https://upload.wikimedia.org/wikipedia/en/thumb/f/fd/Indian_Institute_of_Technology_Delhi_Logo.svg/1200px-Indian_Institute_of_Technology_Delhi_Logo.svg.png",
-        className: "h-10 w-auto",
+        className: "h-20 w-auto",
     },
     {
         id: "logo-2",
         description: "IIM Ahmedabad",
-        image: "https://upload.wikimedia.org/wikipedia/en/7/7f/IIM_Ahmedabad_Logo.svg",
-        className: "h-10 w-auto",
+        image: "/logos/iimr.png",
+        className: "h-20 w-auto",
     },
     {
         id: "logo-3",
         description: "AIIMS",
-        image: "https://upload.wikimedia.org/wikipedia/en/6/69/AIIMS_logo.png",
-        className: "h-10 w-auto",
+        image: "/logos/aiims.png",
+        className: "h-20 w-auto",
     },
     {
         id: "logo-4",
-        description: "NIT",
-        image: "https://upload.wikimedia.org/wikipedia/en/f/f8/NITW_Logo.png",
-        className: "h-10 w-auto",
+        description: "NIT Patna",
+        image: "/logos/nitpatna.png",
+        className: "h-20 w-auto",
     },
     {
         id: "logo-5",
         description: "BITS Pilani",
         image: "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/BITS_Pilani-Logo.svg/1200px-BITS_Pilani-Logo.svg.png",
-        className: "h-10 w-auto",
+        className: "h-20 w-auto",
     },
     {
         id: "logo-6",
         description: "VIT",
         image: "https://upload.wikimedia.org/wikipedia/en/thumb/c/c5/Vellore_Institute_of_Technology_seal_2017.svg/1200px-Vellore_Institute_of_Technology_seal_2017.svg.png",
-        className: "h-10 w-auto",
+        className: "h-20 w-auto",
     },
-    {
-        id: "logo-7",
-        description: "SRM University",
-        image: "https://upload.wikimedia.org/wikipedia/en/f/fe/Srmseal.png",
-        className: "h-10 w-auto",
-    },
+    // {
+    //     id: "logo-7",
+    //     description: "SRM University",
+    //     image: "https://upload.wikimedia.org/wikipedia/en/f/fe/Srmseal.png",
+    //     className: "h-10 w-auto",
+    // },
     {
         id: "logo-8",
         description: "Delhi University",
-        image: "https://upload.wikimedia.org/wikipedia/en/thumb/b/bc/University_of_Delhi.svg/1200px-University_of_Delhi.svg.png",
-        className: "h-10 w-auto",
+        image: "/logos/du.png",
+        className: "h-20 w-auto",
     },
 ];
 
@@ -95,7 +98,7 @@ const LogosCarousel = ({
                                     key={logo.id}
                                     className="flex basis-1/3 justify-center pl-0 sm:basis-1/4 md:basis-1/5 lg:basis-1/6"
                                 >
-                                    <div className="mx-10 flex shrink-0 items-center justify-center opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
+                                    <div className="mx-10 flex shrink-0 items-center justify-center opacity-80 hover:opacity-100 transition-opacity">
                                         <div>
                                             <img
                                                 src={logo.image}

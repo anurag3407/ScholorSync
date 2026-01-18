@@ -1,24 +1,17 @@
-<div align="center">
 
-  <img src="public/next.svg" alt="ScholarSync Logo" width="120"/>
+# 🎓 ScholarSync
 
-  # 🎓 ScholarSync
+### AI-Powered Scholarship Discovery & Fellowship Platform
 
-  ### AI-Powered Scholarship Discovery & Fellowship Platform
+*Never miss money you deserve • Connect students with opportunities*
 
-  *Never miss money you deserve • Connect students with opportunities*
+[![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-12.7-orange?style=for-the-badge&logo=firebase)](https://firebase.google.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5-blue?style=for-the-badge&logo=google)](https://ai.google.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-  [![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-  [![Firebase](https://img.shields.io/badge/Firebase-12.7-orange?style=for-the-badge&logo=firebase)](https://firebase.google.com/)
-  [![Gemini](https://img.shields.io/badge/Gemini-2.5-blue?style=for-the-badge&logo=google)](https://ai.google.dev/)
-  [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-
-  [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Docs](#-api-documentation) • [Contributing](#-contributing)
-
-</div>
-
----
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Docs](#-api-documentation) • [Contributing](#-contributing)
 
 ## 📖 Overview
 

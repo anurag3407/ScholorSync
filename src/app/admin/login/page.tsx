@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,14 @@ export default function AdminLoginPage() {
     const [error, setError] = useState<string | null>(null);
 
     // Redirect if already logged in as admin
+    useEffect(() => {
+        if (!authLoading && isAdmin) {
+            router.push('/admin');
+        }
+    }, [authLoading, isAdmin, router]);
+
+    // Show nothing while redirecting
     if (!authLoading && isAdmin) {
-        router.push('/admin');
         return null;
     }
 

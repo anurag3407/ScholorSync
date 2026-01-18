@@ -63,8 +63,9 @@ export function useSocket({
     useEffect(() => {
         if (!roomId || !userId) return;
 
-        // Create socket connection
-        const socket = io({
+        // Create socket connection - use external socket server URL if configured
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
+        const socket = io(socketUrl, {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 10,

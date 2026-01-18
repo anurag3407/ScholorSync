@@ -141,7 +141,11 @@ export default function ProposalsPage() {
                 throw new Error('Failed to create payment order');
             }
 
-            // 4️⃣ Open Razorpay checkout
+            setShowConfirmModal(false);
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // 5️⃣ Open Razorpay checkout
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
                 amount: orderData.amount,

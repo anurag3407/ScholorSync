@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUser } from '@/lib/firebase/firestore';
 import { getFeeStructureByCollegeName } from '@/lib/firebase/firestore';
 import { analyzeFeeAnomaly } from '@/lib/langchain/chains';
-import Tesseract from 'tesseract.js';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +19,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user profile to determine college and branch
     const user = await getUser(userId);
     if (!user || !user.profile) {
       return NextResponse.json(
@@ -28,7 +29,6 @@ export async function POST(request: NextRequest) {
 
     const { college, branch } = user.profile;
 
-    // Get official fee structure for the college
     const feeStructure = await getFeeStructureByCollegeName(college);
     if (!feeStructure) {
       return NextResponse.json(
@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get fees for the specific branch
     const branchFees = feeStructure.branches[branch];
     if (!branchFees) {
       return NextResponse.json(
@@ -46,24 +45,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Perform OCR on the receipt
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     let receiptText = '';
     if (file.type.startsWith('image/')) {
+      const Tesseract = await import('tesseract.js');
       const ocrResult = await Tesseract.recognize(buffer, 'eng');
       receiptText = ocrResult.data.text;
     } else {
-      // For PDF, we would need a PDF parser
-      // For now, return an error for PDFs
       return NextResponse.json(
         { success: false, error: 'PDF parsing not supported yet. Please upload an image.' },
         { status: 400 }
       );
     }
 
-    // Analyze the receipt using AI
     const analysis = await analyzeFeeAnomaly(
       receiptText,
       {

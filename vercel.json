@@ -1,0 +1,25 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "buildCommand": "next build",
+    "devCommand": "next dev",
+    "installCommand": "npm install",
+    "framework": "nextjs",
+    "regions": [
+        "sin1"
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Cross-Origin-Opener-Policy",
+                    "value": "same-origin-allow-popups"
+                },
+                {
+                    "key": "Cross-Origin-Embedder-Policy",
+                    "value": "unsafe-none"
+                }
+            ]
+        }
+    ]
+}

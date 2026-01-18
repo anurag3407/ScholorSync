@@ -146,23 +146,7 @@ export default function ProjectRoomPage() {
         }
     };
 
-    const loadRazorpay = (): Promise<boolean> => {
-        return new Promise((resolve) => {
-            if ((window as any).Razorpay) {
-                resolve(true);
-                return;
-            }
 
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.async = true;
-
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-
-            document.body.appendChild(script);
-        });
-    };
 
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !room || !user) return;
@@ -323,55 +307,15 @@ export default function ProjectRoomPage() {
         try {
             setReleasing(true);
 
-            // ✅ LOAD RAZORPAY SCRIPT FIRST
-            const loaded = await loadRazorpay();
-            if (!loaded) {
-                toast.error('Razorpay failed to load');
-                return;
-            }
+            // Update escrow status to released - this also marks the room as completed
+            await updateEscrowStatus(room.id, 'released');
 
-            // 1️⃣ Create order
-            const res = await fetch('/api/payments/create-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    roomId: room.id,
-                    amount: room.escrowAmount,
-                }),
-            });
-
-            const data = await res.json();
-            if (!data.success) throw new Error('Order creation failed');
-
-            // 2️⃣ Open Razorpay checkout
-            const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-                amount: data.amount,
-                currency: data.currency,
-                order_id: data.orderId,
-                name: 'Scholarship Payment',
-                description: room.challengeTitle,
-
-                handler: async function (response: any) {
-                    await fetch('/api/payments/verify-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            ...response,
-                            roomId: room.id,
-                        }),
-                    });
-
-                    toast.success('Scholarship released successfully 🎉');
-                    setRoom({ ...room, escrowStatus: 'released', status: 'completed' });
-                },
-            };
-
-            const rzp = new (window as any).Razorpay(options);
-            rzp.open();
+            toast.success('Scholarship released successfully 🎉');
+            setRoom({ ...room, escrowStatus: 'released', status: 'completed' });
+            setShowReleaseModal(false);
         } catch (err) {
             console.error(err);
-            toast.error('Payment failed');
+            toast.error('Failed to release funds');
         } finally {
             setReleasing(false);
         }
@@ -434,7 +378,7 @@ export default function ProjectRoomPage() {
                         </Badge>
                     )}
                 </div>
-            </div>
+            </div>ī
 
             {/* Escrow Banner */}
             <Card className={cn(

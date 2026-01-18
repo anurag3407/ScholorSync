@@ -19,6 +19,10 @@ export const SOCKET_EVENTS = {
     USER_JOINED: 'user-joined',
     USER_LEFT: 'user-left',
     ROOM_USERS: 'room-users',
+
+    // Global presence events
+    GET_ROOMS_PRESENCE: 'get-rooms-presence',
+    ROOMS_PRESENCE: 'rooms-presence',
 } as const;
 
 
@@ -66,3 +70,15 @@ export interface RoomUsersPayload {
         role: UserRole;
     }>;
 }
+
+export interface RoomsPresencePayload {
+    rooms: Record<string, {
+        userCount: number;
+        users: Array<{
+            id: string;
+            name: string;
+            role: UserRole;
+        }>;
+    }>;
+}
+

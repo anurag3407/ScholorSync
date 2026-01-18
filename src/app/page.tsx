@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +23,15 @@ import FeaturesSection from '@/components/blocks/features-section';
 import { ShootingStars } from '@/components/ui/shooting-stars';
 import { StarsBackground } from '@/components/ui/stars-background';
 
+interface Broadcast {
+  id: string;
+  title: string;
+  description?: string;
+  variant: 'info' | 'warning' | 'success' | 'teal';
+  link?: string;
+  linkText?: string;
+}
+
 const stats = [
   { value: '10,000+', label: 'Scholarships Tracked' },
   { value: '₹500Cr+', label: 'In Available Funding' },
@@ -31,34 +40,59 @@ const stats = [
 ];
 
 export default function Home() {
-  const [showBanner, setShowBanner] = useState(true);
+  const [showBanner, setShowBanner] = useState(false);
+  const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
+
+  // Fetch active broadcast from admin
+  useEffect(() => {
+    const fetchBroadcast = async () => {
+      try {
+        const response = await fetch('/api/admin/broadcasts');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.broadcast) {
+            setBroadcast(data.broadcast);
+            setShowBanner(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching broadcast:', error);
+      }
+    };
+
+    fetchBroadcast();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-[#0a0a12] dark:to-[#0d0d18]">
-      {/* Announcement Banner */}
-      <Banner
-        show={showBanner}
-        onHide={() => setShowBanner(false)}
-        variant="teal"
-        title="🎉 New: Micro-Fellowships launched! Earn while you learn."
-        description="Solve real business challenges and get paid"
-        showShade={true}
-        closable={true}
-        icon={<Rocket className="h-4 w-4" />}
-        className="fixed top-0 left-0 right-0 z-[60] rounded-none border-x-0 border-t-0"
-        action={
-          <Link href="/fellowships">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1 text-teal-900 hover:text-teal-950 hover:bg-teal-100 dark:text-teal-100 dark:hover:bg-teal-800/50"
-            >
-              Explore
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </Link>
-        }
-      />
+      {/* Admin Broadcast Banner */}
+      {broadcast && (
+        <Banner
+          show={showBanner}
+          onHide={() => setShowBanner(false)}
+          variant={broadcast.variant || 'teal'}
+          title={broadcast.title}
+          description={broadcast.description}
+          showShade={true}
+          closable={true}
+          icon={<Sparkles className="h-4 w-4" />}
+          className="fixed top-0 left-0 right-0 z-[60] rounded-none border-x-0 border-t-0"
+          action={
+            broadcast.link ? (
+              <Link href={broadcast.link}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 text-teal-900 hover:text-teal-950 hover:bg-teal-100 dark:text-teal-100 dark:hover:bg-teal-800/50"
+                >
+                  {broadcast.linkText || 'Learn More'}
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            ) : undefined
+          }
+        />
+      )}
 
       {/* Navigation */}
       <nav className={`fixed ${showBanner ? 'top-10' : 'top-0'} z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-teal-900/30 dark:bg-[#0a0a12]/90 transition-all duration-300`}>

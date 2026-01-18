@@ -10,7 +10,6 @@ import {
     Timestamp
 } from 'firebase/firestore';
 
-// Types
 interface SuccessStory {
     id: string;
     authorId: string;
@@ -19,12 +18,9 @@ interface SuccessStory {
     scholarship: string;
     amount: string;
     tips: string;
-    likes: number;
-    comments: number;
     createdAt: Timestamp | Date;
 }
 
-// GET - Fetch all success stories
 export async function GET() {
     try {
         const q = query(
@@ -49,7 +45,6 @@ export async function GET() {
     }
 }
 
-// POST - Create new success story
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -76,8 +71,6 @@ export async function POST(request: NextRequest) {
             scholarship,
             amount,
             tips,
-            likes: 0,
-            comments: 0,
             createdAt: serverTimestamp(),
         };
 

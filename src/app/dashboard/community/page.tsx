@@ -59,8 +59,6 @@ interface Discussion {
   author?: string;
   avatar: string;
   category?: string;
-  replies: number;
-  views: number;
   tags: string[];
   createdAt: string;
 }
@@ -217,7 +215,6 @@ export default function CommunityPage() {
     }
   };
 
-  // Tag management for discussions
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim();
     if (trimmedTag && !discussionForm.tags.includes(trimmedTag) && discussionForm.tags.length < 5) {
@@ -448,16 +445,7 @@ export default function CommunityPage() {
                           <p className="text-slate-600 dark:text-slate-400 mt-2">
                             {story.tips}
                           </p>
-                          <div className="flex items-center gap-4 mt-3">
-                            <button className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600">
-                              <ThumbsUp className="h-4 w-4" />
-                              {story.likes}
-                            </button>
-                            <button className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600">
-                              <MessageSquare className="h-4 w-4" />
-                              {story.comments}
-                            </button>
-                          </div>
+                          
                         </div>
                       </div>
                     </div>
@@ -521,14 +509,6 @@ export default function CommunityPage() {
                           <p className="text-sm text-slate-500 mt-1">
                             by {discussion.authorName || discussion.author}
                           </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className="text-sm text-slate-500">
-                              {discussion.replies} replies
-                            </span>
-                            <span className="text-sm text-slate-500">
-                              {discussion.views} views
-                            </span>
-                          </div>
                           <div className="flex gap-2 mt-2">
                             {discussion.tags.map((tag) => (
                               <Badge key={tag} variant="outline" className="text-xs">

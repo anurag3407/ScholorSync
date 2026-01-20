@@ -277,11 +277,20 @@ export const unsaveScholarship = async (userId: string, scholarshipId: string): 
 // Apply for Scholarship
 export const applyForScholarship = async (
   userId: string,
-  scholarshipId: string
+  scholarshipId: string,
+  source: 'scholarship_card' | 'chatbot' | 'direct' = 'direct'
 ): Promise<void> => {
   const usersCollection = getCollectionRef('users');
   const userRef = doc(usersCollection, userId);
   const userSnap = await getDoc(userRef);
+
+  const newApplication = {
+    id: scholarshipId,
+    status: 'applied',
+    appliedOn: Timestamp.now(),
+    source,
+  };
+
   if (userSnap.exists()) {
     const appliedScholarships = userSnap.data().appliedScholarships || [];
     const alreadyApplied = appliedScholarships.some(
@@ -289,16 +298,49 @@ export const applyForScholarship = async (
     );
     if (!alreadyApplied) {
       await updateDoc(userRef, {
-        appliedScholarships: [
-          ...appliedScholarships,
-          {
-            id: scholarshipId,
-            status: 'applied',
-            appliedOn: Timestamp.now(),
-          },
-        ],
+        appliedScholarships: [...appliedScholarships, newApplication],
         updatedAt: Timestamp.now(),
       });
     }
+  } else {
+    // Create user document if it doesn't exist
+    await setDoc(userRef, {
+      appliedScholarships: [newApplication],
+      savedScholarships: [],
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+};
+
+// Update Application Status (for users to update their own applications)
+export const updateApplicationStatus = async (
+  userId: string,
+  scholarshipId: string,
+  newStatus: 'applied' | 'pending' | 'approved' | 'rejected' | 'document_review',
+  notes?: string
+): Promise<void> => {
+  const usersCollection = getCollectionRef('users');
+  const userRef = doc(usersCollection, userId);
+  const userSnap = await getDoc(userRef);
+  if (userSnap.exists()) {
+    const appliedScholarships = userSnap.data().appliedScholarships || [];
+    const updatedScholarships = appliedScholarships.map(
+      (app: { id: string; status: string; notes?: string }) => {
+        if (app.id === scholarshipId) {
+          return {
+            ...app,
+            status: newStatus,
+            statusUpdatedAt: Timestamp.now(),
+            ...(notes !== undefined && { notes }),
+          };
+        }
+        return app;
+      }
+    );
+    await updateDoc(userRef, {
+      appliedScholarships: updatedScholarships,
+      updatedAt: Timestamp.now(),
+    });
   }
 };

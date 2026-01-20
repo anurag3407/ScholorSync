@@ -19,6 +19,7 @@ import {
 import Link from 'next/link';
 import type { ScholarshipMatch } from '@/types';
 import { ChatBot } from '@/components/chatbot/ChatBot';
+import { toast } from 'sonner';
 
 export default function ScholarshipsPage() {
   const { user, loading: authLoading, isConfigured } = useAuth();
@@ -268,7 +269,29 @@ export default function ScholarshipsPage() {
                         {scholarship.applicationUrl ? (
                           <Button
                             size="sm"
-                            onClick={() => window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer')}
+                            onClick={async () => {
+                              // Track the application before opening external URL
+                              if (user) {
+                                try {
+                                  await fetch('/api/scholarships/apply', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      userId: user.uid,
+                                      scholarshipId: scholarship.id,
+                                      source: 'scholarship_card',
+                                    }),
+                                  });
+                                  toast.success('Application tracked!', {
+                                    description: 'Opening scholarship portal...',
+                                  });
+                                } catch (e) {
+                                  console.error('Error tracking application:', e);
+                                }
+                              }
+                              // Open external URL
+                              window.open(scholarship.applicationUrl, '_blank', 'noopener,noreferrer');
+                            }}
                           >
                             Apply
                           </Button>
@@ -283,19 +306,28 @@ export default function ScholarshipsPage() {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    uid: user.uid,
+                                    userId: user.uid,
                                     scholarshipId: scholarship.id,
+                                    source: 'scholarship_card',
                                   }),
                                 });
                                 const data = await res.json();
                                 if (data.success) {
-                                  alert('Application submitted successfully!');
+                                  toast.success('Application submitted!', {
+                                    description: 'View your applications in My Applications page',
+                                    action: {
+                                      label: 'View',
+                                      onClick: () => router.push('/dashboard/applications'),
+                                    },
+                                  });
+                                } else if (data.error === 'Already applied') {
+                                  toast.info('Already applied for this scholarship');
                                 } else {
-                                  alert(data.error || 'Failed to submit application');
+                                  toast.error(data.error || 'Failed to submit application');
                                 }
                               } catch (error) {
                                 console.error('Error applying:', error);
-                                alert('Failed to submit application');
+                                toast.error('Failed to submit application');
                               }
                             }}
                           >

@@ -7,6 +7,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Loader2,
   FileText,
@@ -17,6 +33,12 @@ import {
   Clock,
   AlertCircle,
   RefreshCw,
+  MessageSquare,
+  Bot,
+  MousePointer,
+  Zap,
+  Edit3,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Scholarship, AppliedScholarship } from '@/types';
@@ -31,6 +53,11 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
+  const [newStatus, setNewStatus] = useState<string>('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user && isConfigured) {
@@ -40,12 +67,12 @@ export default function ApplicationsPage() {
 
   const loadApplications = async () => {
     if (!user) return;
-    
+
     try {
       // Fetch latest user data
       const profileResponse = await fetch(`/api/profile?uid=${user.uid}`);
       let appliedScholarships: AppliedScholarship[] = [];
-      
+
       if (profileResponse.ok) {
         const userData = await profileResponse.json();
         appliedScholarships = userData.appliedScholarships || [];
@@ -58,7 +85,7 @@ export default function ApplicationsPage() {
         const scholarshipsResponse = await fetch('/api/scholarships');
         if (scholarshipsResponse.ok) {
           const allScholarships = await scholarshipsResponse.json();
-          
+
           const applicationsWithDetails = appliedScholarships.map(app => {
             const scholarship = allScholarships.find((s: Scholarship) => s.id === app.id);
             return {
@@ -66,16 +93,18 @@ export default function ApplicationsPage() {
               scholarship,
             };
           });
-          
+
           // Sort by applied date (most recent first)
           applicationsWithDetails.sort((a, b) => {
             const dateA = new Date(a.appliedOn).getTime();
             const dateB = new Date(b.appliedOn).getTime();
             return dateB - dateA;
           });
-          
+
           setApplications(applicationsWithDetails);
         }
+      } else {
+        setApplications([]);
       }
     } catch (error) {
       console.error('Error loading applications:', error);
@@ -100,6 +129,46 @@ export default function ApplicationsPage() {
     await loadApplications();
   };
 
+  const openStatusDialog = (application: ApplicationWithDetails) => {
+    setSelectedApplication(application);
+    setNewStatus(application.status);
+    setNotes(application.notes || '');
+    setStatusDialogOpen(true);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!user || !selectedApplication || !newStatus) return;
+
+    setUpdatingStatus(selectedApplication.id);
+    try {
+      const response = await fetch('/api/applications/update-status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          scholarshipId: selectedApplication.id,
+          status: newStatus,
+          notes: notes || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Application status updated!');
+        setStatusDialogOpen(false);
+        await refreshUser();
+        await loadApplications();
+      } else {
+        toast.error(data.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'applied':
@@ -111,6 +180,15 @@ export default function ApplicationsPage() {
           borderColor: 'border-blue-300',
           progress: 25,
         };
+      case 'document_review':
+        return {
+          icon: FileText,
+          label: 'Document Review',
+          color: 'text-purple-600',
+          bgColor: 'bg-purple-100',
+          borderColor: 'border-purple-300',
+          progress: 40,
+        };
       case 'pending':
         return {
           icon: AlertCircle,
@@ -118,7 +196,7 @@ export default function ApplicationsPage() {
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-100',
           borderColor: 'border-yellow-300',
-          progress: 50,
+          progress: 60,
         };
       case 'approved':
         return {
@@ -150,12 +228,51 @@ export default function ApplicationsPage() {
     }
   };
 
+  const getSourceInfo = (source?: string) => {
+    switch (source) {
+      case 'chatbot':
+        return {
+          icon: Bot,
+          label: 'Chatbot',
+          color: 'text-emerald-600',
+          bgColor: 'bg-emerald-50',
+        };
+      case 'scholarship_card':
+        return {
+          icon: MousePointer,
+          label: 'Scholarship Card',
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-50',
+        };
+      case 'direct':
+      default:
+        return {
+          icon: Zap,
+          label: 'Direct',
+          color: 'text-orange-600',
+          bgColor: 'bg-orange-50',
+        };
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const info = getStatusInfo(status);
     const Icon = info.icon;
-    
+
     return (
       <Badge className={`${info.bgColor} ${info.color} border ${info.borderColor}`}>
+        <Icon className="mr-1 h-3 w-3" />
+        {info.label}
+      </Badge>
+    );
+  };
+
+  const getSourceBadge = (source?: string) => {
+    const info = getSourceInfo(source);
+    const Icon = info.icon;
+
+    return (
+      <Badge variant="outline" className={`${info.bgColor} ${info.color} border-transparent`}>
         <Icon className="mr-1 h-3 w-3" />
         {info.label}
       </Badge>
@@ -188,7 +305,7 @@ export default function ApplicationsPage() {
   const stats = {
     total: applications.length,
     applied: applications.filter(a => a.status === 'applied').length,
-    pending: applications.filter(a => a.status === 'pending').length,
+    pending: applications.filter(a => a.status === 'pending' || a.status === 'document_review').length,
     approved: applications.filter(a => a.status === 'approved').length,
     rejected: applications.filter(a => a.status === 'rejected').length,
   };
@@ -200,7 +317,7 @@ export default function ApplicationsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Applications</h1>
           <p className="text-muted-foreground mt-2">
-            Track the status of your scholarship applications
+            Track and manage your scholarship applications
           </p>
         </div>
         <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
@@ -272,7 +389,7 @@ export default function ApplicationsPage() {
           {applications.map((application) => {
             const statusInfo = getStatusInfo(application.status);
             const StatusIcon = statusInfo.icon;
-            
+
             return (
               <Card key={application.id} className={`border-l-4 ${statusInfo.borderColor}`}>
                 <CardHeader className="pb-2">
@@ -285,7 +402,10 @@ export default function ApplicationsPage() {
                         {application.scholarship?.provider || 'Unknown Provider'}
                       </CardDescription>
                     </div>
-                    {getStatusBadge(application.status)}
+                    <div className="flex items-center gap-2">
+                      {getSourceBadge(application.source)}
+                      {getStatusBadge(application.status)}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -295,8 +415,8 @@ export default function ApplicationsPage() {
                       <span>Application Progress</span>
                       <span>{statusInfo.progress}%</span>
                     </div>
-                    <Progress 
-                      value={statusInfo.progress} 
+                    <Progress
+                      value={statusInfo.progress}
                       className={`h-2 ${application.status === 'rejected' ? '[&>div]:bg-red-500' : application.status === 'approved' ? '[&>div]:bg-green-500' : ''}`}
                     />
                   </div>
@@ -330,12 +450,24 @@ export default function ApplicationsPage() {
                     )}
                   </div>
 
+                  {/* Notes */}
+                  {application.notes && (
+                    <div className="p-3 rounded-lg bg-gray-50 border">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                        <MessageSquare className="h-4 w-4" />
+                        Your Notes
+                      </div>
+                      <p className="text-sm text-gray-600">{application.notes}</p>
+                    </div>
+                  )}
+
                   {/* Status Message */}
                   <div className={`p-3 rounded-lg ${statusInfo.bgColor}`}>
                     <div className="flex items-center gap-2">
                       <StatusIcon className={`h-4 w-4 ${statusInfo.color}`} />
                       <span className={`text-sm font-medium ${statusInfo.color}`}>
                         {application.status === 'applied' && 'Your application has been submitted and is awaiting review.'}
+                        {application.status === 'document_review' && 'Your documents are being reviewed by the scholarship committee.'}
                         {application.status === 'pending' && 'Your application is currently under review by the scholarship committee.'}
                         {application.status === 'approved' && 'Congratulations! Your application has been approved.'}
                         {application.status === 'rejected' && 'Unfortunately, your application was not selected this time.'}
@@ -344,8 +476,16 @@ export default function ApplicationsPage() {
                   </div>
 
                   {/* Actions */}
-                  {application.scholarship?.applicationUrl && (
-                    <div className="flex justify-end">
+                  <div className="flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openStatusDialog(application)}
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      Update Status
+                    </Button>
+                    {application.scholarship?.applicationUrl && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -354,14 +494,65 @@ export default function ApplicationsPage() {
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View Original
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
       )}
+
+      {/* Status Update Dialog */}
+      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Application Status</DialogTitle>
+            <DialogDescription>
+              Track your application progress by updating its status and adding notes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="applied">Applied</SelectItem>
+                  <SelectItem value="document_review">Document Review</SelectItem>
+                  <SelectItem value="pending">Under Review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notes (Optional)</label>
+              <Textarea
+                placeholder="Add any notes about your application..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateStatus} disabled={!!updatingStatus}>
+              {updatingStatus ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

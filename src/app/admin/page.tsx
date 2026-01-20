@@ -122,6 +122,7 @@ interface Application {
   appliedOn: Date;
   statusUpdatedAt?: Date;
   documents?: Record<string, string>;
+  source?: 'scholarship_card' | 'chatbot' | 'direct';
 }
 
 export default function AdminDashboard() {
@@ -1018,6 +1019,20 @@ export default function AdminDashboard() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {application.source && (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${application.source === 'chatbot'
+                                  ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                                  : application.source === 'scholarship_card'
+                                    ? 'border-blue-500/50 text-blue-400 bg-blue-500/10'
+                                    : 'border-orange-500/50 text-orange-400 bg-orange-500/10'
+                                }`}
+                            >
+                              {application.source === 'chatbot' ? 'Chatbot' :
+                                application.source === 'scholarship_card' ? 'Card' : 'Direct'}
+                            </Badge>
+                          )}
                           {getStatusBadge(application.status)}
                           <Button
                             variant="ghost"

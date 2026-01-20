@@ -17,8 +17,10 @@ import {
   Sparkles,
   ExternalLink,
   ChevronDown,
-  Loader2
+  Loader2,
+  Check
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -88,6 +90,8 @@ export function ChatBot({ isOpen: controlledIsOpen, onOpenChange }: ChatBotProps
     'Show me engineering scholarships',
     'What documents do I need?',
   ]);
+  const [applyingScholarship, setApplyingScholarship] = useState<string | null>(null);
+  const [appliedScholarships, setAppliedScholarships] = useState<Set<string>>(new Set());
 
   // Use actual user profile from auth context
   const userProfile = useMemo<UserProfile>(() => {
@@ -128,6 +132,42 @@ export function ChatBot({ isOpen: controlledIsOpen, onOpenChange }: ChatBotProps
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleApplyFromChatbot = async (scholarshipId: string, scholarshipName: string) => {
+    if (!user) {
+      toast.error('Please log in to apply for scholarships');
+      return;
+    }
+
+    setApplyingScholarship(scholarshipId);
+    try {
+      const response = await fetch('/api/scholarships/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          scholarshipId,
+          source: 'chatbot',
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Applied for ${scholarshipName}!`);
+        setAppliedScholarships(prev => new Set([...prev, scholarshipId]));
+      } else if (data.error === 'Already applied') {
+        toast.info('You have already applied for this scholarship');
+        setAppliedScholarships(prev => new Set([...prev, scholarshipId]));
+      } else {
+        toast.error(data.error || 'Failed to apply');
+      }
+    } catch (error) {
+      console.error('Error applying from chatbot:', error);
+      toast.error('Failed to apply. Please try again.');
+    } finally {
+      setApplyingScholarship(null);
+    }
+  };
 
   const sendMessage = async (messageText?: string) => {
     const text = messageText || input.trim();
@@ -334,36 +374,62 @@ export function ChatBot({ isOpen: controlledIsOpen, onOpenChange }: ChatBotProps
                         {/* Scholarship Cards */}
                         {message.scholarships && message.scholarships.length > 0 && (
                           <div className="mt-3 space-y-2">
-                            {message.scholarships.map((scholarship) => (
-                              <Card key={scholarship.id} className="bg-white/90 p-3">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-sm text-gray-900 truncate">
-                                      {scholarship.name}
-                                    </h4>
-                                    <p className="text-xs text-gray-500 truncate">
-                                      {scholarship.provider}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="secondary" className="text-xs">
-                                        ₹{scholarship.amount.min.toLocaleString()} - ₹{scholarship.amount.max.toLocaleString()}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {scholarship.matchScore.toFixed(0)}% match
-                                      </Badge>
+                            {message.scholarships.map((scholarship) => {
+                              const isApplied = appliedScholarships.has(scholarship.id);
+                              const isApplying = applyingScholarship === scholarship.id;
+
+                              return (
+                                <Card key={scholarship.id} className="bg-white/90 p-3">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-sm text-gray-900 truncate">
+                                        {scholarship.name}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {scholarship.provider}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant="secondary" className="text-xs">
+                                          ₹{scholarship.amount.min.toLocaleString()} - ₹{scholarship.amount.max.toLocaleString()}
+                                        </Badge>
+                                        <Badge variant="outline" className="text-xs">
+                                          {scholarship.matchScore.toFixed(0)}% match
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => handleApplyFromChatbot(scholarship.id, scholarship.name)}
+                                        disabled={isApplying || isApplied}
+                                        className={`px-2 py-1 text-xs font-medium rounded transition-colors ${isApplied
+                                            ? 'bg-green-100 text-green-700 cursor-default'
+                                            : 'bg-green-600 text-white hover:bg-green-700 disabled:opacity-50'
+                                          }`}
+                                      >
+                                        {isApplying ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : isApplied ? (
+                                          <span className="flex items-center gap-1">
+                                            <Check className="h-3 w-3" /> Applied
+                                          </span>
+                                        ) : (
+                                          'Apply'
+                                        )}
+                                      </button>
+                                      <a
+                                        href={scholarship.applicationUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 hover:text-green-800 p-1"
+                                        title="View Original"
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </a>
                                     </div>
                                   </div>
-                                  <a
-                                    href={scholarship.applicationUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-green-600 hover:text-green-800"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </div>
-                              </Card>
-                            ))}
+                                </Card>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

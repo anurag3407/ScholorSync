@@ -23,8 +23,11 @@ export interface UserDocument {
 
 export interface AppliedScholarship {
   id: string;
-  status: 'applied' | 'pending' | 'approved' | 'rejected';
+  status: 'applied' | 'pending' | 'approved' | 'rejected' | 'document_review';
   appliedOn: Date;
+  source: 'scholarship_card' | 'chatbot' | 'direct';
+  notes?: string;
+  statusUpdatedAt?: Date;
 }
 
 export interface User {

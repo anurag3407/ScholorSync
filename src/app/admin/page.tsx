@@ -142,6 +142,7 @@ export default function AdminDashboard() {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<(ProjectRoom & { messages?: any[] }) | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [showApproved, setShowApproved] = useState(false);
 
   // Broadcast state
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
@@ -471,6 +472,11 @@ export default function AdminDashboard() {
   ) => {
     if (!adminCredentials) return;
 
+    if (!userId || !scholarshipId) {
+      toast.error('Invalid application data: Missing User ID or Scholarship ID');
+      return;
+    }
+
     try {
       const res = await fetch('/api/admin/applications', {
         method: 'PUT',
@@ -483,6 +489,7 @@ export default function AdminDashboard() {
           userId,
           scholarshipId,
           newStatus,
+          notes: '', // explicit default
         }),
       });
 
@@ -1007,127 +1014,143 @@ export default function AdminDashboard() {
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-4">
-            <h2 className="text-lg font-semibold text-white">Manage Applications</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Manage Applications</h2>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={showApproved}
+                  onCheckedChange={setShowApproved}
+                  id="show-approved"
+                />
+                <Label htmlFor="show-approved" className="text-slate-300">
+                  Show Approved
+                </Label>
+              </div>
+            </div>
             {isLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
               </div>
             ) : (
               <div className="grid gap-4">
-                {applications.length === 0 ? (
+                {applications.filter(app => showApproved ? app.status === 'approved' : app.status !== 'approved').length === 0 ? (
                   <Card className="bg-slate-800/50 border-slate-700">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Users className="h-12 w-12 text-slate-500 mb-4" />
-                      <p className="text-slate-400">No applications yet</p>
+                      <p className="text-slate-400">
+                        {showApproved ? 'No approved applications found' : 'No pending applications'}
+                      </p>
                     </CardContent>
                   </Card>
                 ) : (
-                  applications.map((application) => (
-                    <Card key={application.id} className="bg-slate-800/50 border-slate-700">
-                      <CardHeader className="flex flex-row items-start justify-between pb-2">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg text-white">{application.scholarshipName}</CardTitle>
-                          <CardDescription className="text-slate-400">
-                            Applied by: {application.userName} ({application.userEmail})
-                          </CardDescription>
-                          {application.userProfile && (
-                            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                              <span className="text-slate-500">Category: <span className="text-slate-300">{application.userProfile.category || 'N/A'}</span></span>
-                              <span className="text-slate-500">Year: <span className="text-slate-300">{application.userProfile.year || 'N/A'}</span></span>
-                              <span className="text-slate-500">Percentage: <span className="text-slate-300">{application.userProfile.percentage || 'N/A'}%</span></span>
-                              <span className="text-slate-500">College: <span className="text-slate-300">{application.userProfile.college || 'N/A'}</span></span>
+                  applications
+                    .filter(app => showApproved ? app.status === 'approved' : app.status !== 'approved')
+                    .map((application) => (
+                      <Card key={application.id} className="bg-slate-800/50 border-slate-700">
+                        <CardHeader className="flex flex-row items-start justify-between pb-2">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg text-white">{application.scholarshipName}</CardTitle>
+                            <CardDescription className="text-slate-400">
+                              Applied by: {application.userName} ({application.userEmail})
+                            </CardDescription>
+                            {application.userProfile && (
+                              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                <span className="text-slate-500">Category: <span className="text-slate-300">{application.userProfile.category || 'N/A'}</span></span>
+                                <span className="text-slate-500">Year: <span className="text-slate-300">{application.userProfile.year || 'N/A'}</span></span>
+                                <span className="text-slate-500">Percentage: <span className="text-slate-300">{application.userProfile.percentage || 'N/A'}%</span></span>
+                                <span className="text-slate-500">College: <span className="text-slate-300">{application.userProfile.college || 'N/A'}</span></span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {application.source && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${application.source === 'chatbot'
+                                  ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                                  : application.source === 'scholarship_card'
+                                    ? 'border-blue-500/50 text-blue-400 bg-blue-500/10'
+                                    : 'border-orange-500/50 text-orange-400 bg-orange-500/10'
+                                  }`}
+                              >
+                                {application.source === 'chatbot' ? 'Chatbot' :
+                                  application.source === 'scholarship_card' ? 'Card' : 'Direct'}
+                              </Badge>
+                            )}
+                            {getStatusBadge(application.status)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-slate-400 hover:text-white"
+                              onClick={() => setSelectedApplication(application)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-col gap-3">
+                            <div className="text-sm text-slate-400">
+                              Applied on: {new Date(application.appliedOn).toLocaleDateString()}
                             </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {application.source && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${application.source === 'chatbot'
-                                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
-                                : application.source === 'scholarship_card'
-                                  ? 'border-blue-500/50 text-blue-400 bg-blue-500/10'
-                                  : 'border-orange-500/50 text-orange-400 bg-orange-500/10'
-                                }`}
-                            >
-                              {application.source === 'chatbot' ? 'Chatbot' :
-                                application.source === 'scholarship_card' ? 'Card' : 'Direct'}
-                            </Badge>
-                          )}
-                          {getStatusBadge(application.status)}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-400 hover:text-white"
-                            onClick={() => setSelectedApplication(application)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-col gap-3">
-                          <div className="text-sm text-slate-400">
-                            Applied on: {new Date(application.appliedOn).toLocaleDateString()}
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant={application.status === 'document_review' ? 'default' : 'outline'}
+                                onClick={() => handleUpdateApplicationStatus(
+                                  application.odoo,
+                                  application.scholarshipId,
+                                  'document_review'
+                                )}
+                                className={application.status === 'document_review' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-700 text-slate-300'}
+                              >
+                                <FileText className="mr-1 h-3 w-3" />
+                                Document Review
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={application.status === 'pending' ? 'default' : 'outline'}
+                                onClick={() => handleUpdateApplicationStatus(
+                                  application.odoo,
+                                  application.scholarshipId,
+                                  'pending'
+                                )}
+                                className={application.status === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-slate-700 text-slate-300'}
+                              >
+                                <Clock className="mr-1 h-3 w-3" />
+                                Pending
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={application.status === 'approved' ? 'default' : 'outline'}
+                                onClick={() => handleUpdateApplicationStatus(
+                                  application.odoo,
+                                  application.scholarshipId,
+                                  'approved'
+                                )}
+                                className={application.status === 'approved' ? 'bg-green-600 hover:bg-green-700' : 'border-slate-700 text-slate-300'}
+                              >
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={application.status === 'rejected' ? 'default' : 'outline'}
+                                onClick={() => handleUpdateApplicationStatus(
+                                  application.odoo,
+                                  application.scholarshipId,
+                                  'rejected'
+                                )}
+                                className={application.status === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'border-slate-700 text-slate-300'}
+                              >
+                                <XCircle className="mr-1 h-3 w-3" />
+                                Reject
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant={application.status === 'document_review' ? 'default' : 'outline'}
-                              onClick={() => handleUpdateApplicationStatus(
-                                application.odoo,
-                                application.scholarshipId,
-                                'document_review'
-                              )}
-                              className={application.status === 'document_review' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-700 text-slate-300'}
-                            >
-                              <FileText className="mr-1 h-3 w-3" />
-                              Document Review
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={application.status === 'pending' ? 'default' : 'outline'}
-                              onClick={() => handleUpdateApplicationStatus(
-                                application.odoo,
-                                application.scholarshipId,
-                                'pending'
-                              )}
-                              className={application.status === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-slate-700 text-slate-300'}
-                            >
-                              <Clock className="mr-1 h-3 w-3" />
-                              Pending
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={application.status === 'approved' ? 'default' : 'outline'}
-                              onClick={() => handleUpdateApplicationStatus(
-                                application.odoo,
-                                application.scholarshipId,
-                                'approved'
-                              )}
-                              className={application.status === 'approved' ? 'bg-green-600 hover:bg-green-700' : 'border-slate-700 text-slate-300'}
-                            >
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={application.status === 'rejected' ? 'default' : 'outline'}
-                              onClick={() => handleUpdateApplicationStatus(
-                                application.odoo,
-                                application.scholarshipId,
-                                'rejected'
-                              )}
-                              className={application.status === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'border-slate-700 text-slate-300'}
-                            >
-                              <XCircle className="mr-1 h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                        </CardContent>
+                      </Card>
+                    ))
                 )}
               </div>
             )}
